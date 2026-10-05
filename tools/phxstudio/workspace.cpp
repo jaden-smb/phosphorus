@@ -567,10 +567,10 @@ void Workspace::draw_welcome(Host& h, const Rect& r) {
     const int cx = r.x + std::max(12, (r.w - 420) / 2);
     int y = r.y + std::max(10, (r.h - 250) / 3);
     const std::string pname = h.project_name();
-    g.text(cx, y, pname.empty() ? std::string("Phoenix Studio") : pname, g.th.accent, kSubText, r.w, 2);
+    g.text(cx, y, pname.empty() ? std::string("Phosphorus Studio") : pname, g.th.accent, kSubText, r.w, 2);
     y += 20;
     if (!pname.empty()) {
-        g.text(cx, y, "A Phoenix game project: " + root_, g.th.dim, kSubText, r.w - 20);
+        g.text(cx, y, "A Phosphorus game project: " + root_, g.th.dim, kSubText, r.w - 20);
         g.text(cx, y + 10, "Everything you edit here stays inside this folder. The engine's public", g.th.dim, kSubText, r.w - 20);
         g.text(cx, y + 20, "API is in the Explorer under ENGINE API, read-only. Run > Play builds it.", g.th.dim, kSubText, r.w - 20);
     } else {

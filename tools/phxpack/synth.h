@@ -2,7 +2,7 @@
 // parameters (`.sfx`, an sfxr-style generator) and MUSIC from a small pattern tracker (`.song`).
 // Both render to mono 16-bit PCM at kSynthRate and bake as ordinary Sound assets (build_sfx /
 // build_song in builders.h), so the runtime needs nothing new: GameAudio::play() / play_music(), the
-// flow table's `music` column, the tier-0 resample to the GBA device rate. Phoenix Studio's SFX
+// flow table's `music` column, the tier-0 resample to the GBA device rate. Phosphorus Studio's SFX
 // and song editors edit these documents and audition exactly what the bake renders.
 //
 // Deterministic: noise is an LFSR, presets/randomize/mutate take a seed. Never compiled into a
@@ -401,7 +401,7 @@ struct Song {
             for (auto& row : p.rows) row.resize(size_t(channels));
     }
 
-    // ---- editing (Phoenix Studio's tracker; every index stays consistent) ----
+    // ---- editing (Phosphorus Studio's tracker; every index stays consistent) ----
     std::string fresh_pattern_name() const {
         for (char c = 'A'; c <= 'Z'; ++c) if (find_pattern(std::string(1, c)) < 0) return std::string(1, c);
         for (int k = 1;; ++k) if (find_pattern("P" + std::to_string(k)) < 0) return "P" + std::to_string(k);

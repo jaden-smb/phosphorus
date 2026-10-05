@@ -1,4 +1,4 @@
-# Phoenix Engine — Feasibility Study: A Graphical Interface (Editor) for the Engine
+# Phosphorus Engine — Feasibility Study: A Graphical Interface (Editor) for the Engine
 
 > **Status:** analysis + implementation plan (2026-09-11), written against the tree at
 > `v0.1.0` + the unreleased `tinyllm` work.
@@ -229,7 +229,7 @@ with `ResourceCache::mount()` / `unmount()` for a live preview through the real 
 | Reading | Meaning | Feasibility | Where it stands |
 |---|---|---|---|
 | **R1. In-game GUI** | menus/HUD/dialogue drawn by games on GBA/PSP/PC | Done | `engine/ui` (§2.4). Extending it (e.g. pointer support for PC-only games, more widgets) is a small, ordinary engine task. |
-| **R2. Desktop editor / "Phoenix Studio"** | a windowed authoring application: project browser, level editor with live viewport, tileset/sprite/animation editing, prefab & entity inspector, audio preview, bake/build/deploy to all targets, play-in-editor | **Feasible; the subject of this document** | Two single-purpose editors exist (§2.5). |
+| **R2. Desktop editor / "Phosphorus Studio"** | a windowed authoring application: project browser, level editor with live viewport, tileset/sprite/animation editing, prefab & entity inspector, audio preview, bake/build/deploy to all targets, play-in-editor | **Feasible; the subject of this document** | Two single-purpose editors exist (§2.5). |
 | **R3. External-toolkit front end** | Qt / Electron / web UI driving the CLI tools, or a Dear ImGui app embedding the engine | Feasible, but adds the first third-party UI dependency and a second UI technology | Nothing exists; §5 evaluates it as Options B/C. |
 
 The rest of the document is about **R2**, since R1 is done and R3 is a variant of R2's design
@@ -308,7 +308,7 @@ texture and shown as an `ImGui::Image`.
 - **Cons:** first third-party UI dependency (allowed by the "tools are host-only" rule but a
   policy change); two UI technologies to maintain; the null backend's virtual clock and scripted
   input mean play-mode inside the ImGui viewport needs a custom platform backend or a child
-  process anyway; loses "the editor is a Phoenix app" (the project's explicit dogfooding value).
+  process anyway; loses "the editor is a Phosphorus app" (the project's explicit dogfooding value).
 - **When to choose it:** if after Phase 2 the bespoke widget kit is clearly the schedule risk.
   The design below keeps document models, project model, bake, viewport composition and play
   mode **independent of the widget layer**, so switching the shell to ImGui later discards only
@@ -328,7 +328,7 @@ shell-agnostic so Option B remains a two-week pivot rather than a rewrite.
 
 ---
 
-## 6. Target design — "Phoenix Studio" (`phxstudio`)
+## 6. Target design — "Phosphorus Studio" (`phxstudio`)
 
 ### 6.1 What the user sees
 
@@ -398,7 +398,7 @@ validation, round-trip tests) with no new code paths.
  Makefile                                           MOD  `make studio`, `studio-smoke`; add to `win`
  CMakeLists.txt                                     MOD  option(PHX_BUILD_EDITORS) + find_package(SDL2)
  .github/workflows/ci.yml                           MOD  editors job (xvfb-run bounded smoke)
- docs/08-tooling.md                                 MOD  §10 Phoenix Studio
+ docs/08-tooling.md                                 MOD  §10 Phosphorus Studio
 ```
 
 ---

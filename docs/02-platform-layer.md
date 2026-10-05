@@ -1,4 +1,4 @@
-# Phoenix Engine — Platform Layer
+# Phosphorus Engine — Platform Layer
 
 > `engine/platform/` — the **C-ABI seam** that isolates every OS/hardware dependency.
 > Above this line: portable C++17. Below it: exactly one backend, chosen by the linker.

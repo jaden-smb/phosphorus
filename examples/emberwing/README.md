@@ -1,6 +1,6 @@
 # Emberwing — Cinder Hollow (vertical slice)
 
-A complete, original 2D pixel-art platformer level built on the Phoenix engine, running the
+A complete, original 2D pixel-art platformer level built on the Phosphorus engine, running the
 **same gameplay code** on GBA, PSP, Windows and Linux. You play **Ember**, a phoenix hatchling
 crossing **Cinder Hollow** — a dusk-lit volcanic valley — to reach the **Sungate** and rekindle
 it. The level is designed on the pacing/readability philosophy of the first level of the

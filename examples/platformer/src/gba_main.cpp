@@ -26,7 +26,7 @@ int main() {
 
     Config cfg = Config::from_defaults();          // budgets seeded from phx::caps() (GBA tier)
     cfg.sim_hz = 60;
-    cfg.title  = "Phoenix Platformer";
+    cfg.title  = "Phosphorus Platformer";
     cfg.width  = 120; cfg.height = 80;             // 2x-scaled to 240x160 by the GBA backend
     cfg.total_ram     = 160u << 10;                // EWRAM engine arena (fb is allocated apart)
     cfg.frame_scratch = 4u  << 10;

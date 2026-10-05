@@ -46,7 +46,7 @@ jobs:
           name: release-linux
           path: |
             build/dist/*.tar.gz
-            build/pkg/phoenix-*-sdk-*.tar.gz
+            build/pkg/phosphorus-*-sdk-*.tar.gz
 
   windows:
     needs: verify-version
@@ -122,6 +122,6 @@ jobs:
         run: |
           find artifacts -type f | sort
           gh release create "$GITHUB_REF_NAME" \
-            --title "Phoenix $GITHUB_REF_NAME" \
+            --title "Phosphorus $GITHUB_REF_NAME" \
             --generate-notes \
             $(find artifacts -type f \( -name '*.tar.gz' -o -name '*.zip' \))

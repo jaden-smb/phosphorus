@@ -21,7 +21,7 @@ extern "C" void phx_null_desktop_push(const phx_desktop_event* e);
 
 using namespace phx;
 
-// A reflected component: what `make game` exports for Phoenix Studio (write_component_schema).
+// A reflected component: what `make game` exports for Phosphorus Studio (write_component_schema).
 struct Speedy { int16_t top = 90; scalar accel = s_from_q16(3 * 32768); bool turbo = true; };
 PHX_COMPONENT(Speedy, PHX_FIELD(Speedy, top), PHX_FIELD(Speedy, accel), PHX_FIELD(Speedy, turbo));
 

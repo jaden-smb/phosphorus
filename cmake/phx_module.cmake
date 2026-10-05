@@ -14,7 +14,7 @@ function(phx_add_module name)
 
   add_library(phx_${name} STATIC ${M_SRC})
   # BUILD_INTERFACE/INSTALL_INTERFACE split so the target is exportable: installed consumers
-  # (find_package(phoenix), see the root CMakeLists' install section) resolve headers from
+  # (find_package(phosphorus), see the root CMakeLists' install section) resolve headers from
   # <prefix>/include instead of this source tree.
   target_include_directories(phx_${name} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

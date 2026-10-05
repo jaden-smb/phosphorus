@@ -50,7 +50,7 @@ void expect_px(const uint32_t* fb, int x, int y, Rgba want, const char* what) {
 int main() {
     const phx_platform* plat = phx_platform_get();
     phx_platform_desc desc{};
-    desc.title = "phoenix window_verify"; desc.width = FBW; desc.height = FBH; desc.vsync = 0;
+    desc.title = "phosphorus window_verify"; desc.width = FBW; desc.height = FBH; desc.vsync = 0;
     if (plat->init(&desc) != 0) { std::printf("platform init failed (no display?)\n"); return 1; }
 
     static uint8_t arena_buf[8 << 20];

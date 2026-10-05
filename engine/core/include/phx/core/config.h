@@ -11,7 +11,7 @@
 namespace phx {
 
 struct Config {
-    const char* title = "Phoenix";
+    const char* title = "Phosphorus Engine";
 
     // budgets — 0 means "derive from the capability tier"
     uint32_t total_ram     = 0;

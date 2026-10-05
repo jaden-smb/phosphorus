@@ -1,4 +1,4 @@
-# Phoenix Engine — Core Module
+# Phosphorus Engine — Core Module
 
 > `engine/core/` — the mandatory foundation every other module sits on.
 > A **closed** module: zero outgoing dependencies. Compiles on all four tiers.

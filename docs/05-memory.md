@@ -1,4 +1,4 @@
-# Phoenix Engine — Memory Management
+# Phosphorus Engine — Memory Management
 
 > `engine/memory/` — the bedrock. Every other module allocates *through* these and
 > never through `malloc`/`new` on the hot path. Primary goals: **zero runtime
@@ -212,7 +212,7 @@ two orders of magnitude smaller, same code.
 
 ## 8. Why this beats a general heap (justification)
 
-| Property            | General `malloc`        | Phoenix allocators           |
+| Property            | General `malloc`        | Phosphorus allocators           |
 |---------------------|-------------------------|------------------------------|
 | Fragmentation       | accumulates over hours  | structurally impossible      |
 | Worst-case latency  | unbounded (search/coalesce) | O(1) bounded             |

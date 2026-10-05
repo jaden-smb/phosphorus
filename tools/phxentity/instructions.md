@@ -7,7 +7,7 @@ parameters, item stats, tuning values and similar data. It edits the author form
 blobs (docs/08 §1). `phxbin`/`phxpack` bake what it saves, and the editors suite proves an edited
 table still bakes through the real `phxbin` builder.
 
-`phxentity` is **Phoenix Studio's table editor in a window of its own**. It hosts the Studio's
+`phxentity` is **Phosphorus Studio's table editor in a window of its own**. It hosts the Studio's
 table panel (`tools/phxstudio/ed_table.cpp`) in a one-document shell (`tools/phxstudio/solo.h`).
 Inside the Studio, open any phxbin `.json` from the Explorer instead
 ([Studio guide](../phxstudio/instructions.md#data-table-editor)).

@@ -1,4 +1,4 @@
-# Phoenix Engine — Master Architecture Document
+# Phosphorus Engine — Master Architecture Document
 
 > **Document status:** Initial Technical Design (TDD v0.1)
 > **Audience:** Engine engineers, gameplay programmers, tools developers, porters
@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-Phoenix Engine (codename **`phx`**) is a lightweight, modular, data-oriented game
+Phosphorus Engine (codename **`phx`**) is a lightweight, modular, data-oriented game
 engine for **2D and 2.5D** games targeting four wildly different machines from a
 single codebase:
 
@@ -28,7 +28,7 @@ was an early sketch and is **dropped as a non-goal** (docs/03 §6 records the de
 path would widen the maintenance matrix for the one tier with performance to spare.
 
 The central engineering tension is the **17,000× RAM gap** between the GBA and a
-modern PC. Phoenix resolves this not by lowest-common-denominator design, but by a
+modern PC. Phosphorus resolves this not by lowest-common-denominator design, but by a
 **capability-tiered architecture**: a small mandatory core that runs everywhere,
 and feature modules that scale their backends and budgets to the host. The public
 API is identical on every platform; only the implementation and the *configured
@@ -47,7 +47,7 @@ budgets* differ.
 
 ## 2. Architectural Style
 
-Phoenix is a **layered, data-oriented engine** with a **stable C-ABI platform
+Phosphorus is a **layered, data-oriented engine** with a **stable C-ABI platform
 seam** and a **C++17 systems layer** above it.
 
 ```
@@ -165,7 +165,7 @@ The GBA has **no FPU**. The PSP FPU is fast but the VFPU is the real win. PCs ha
 SSE. We refuse to pay software-float cost on GBA while leaving PSP/PC performance on
 the table.
 
-**Decision:** Phoenix math is built on a `scalar` typedef selected per tier:
+**Decision:** Phosphorus math is built on a `scalar` typedef selected per tier:
 
 ```cpp
 // phx/core/math.h
@@ -192,7 +192,7 @@ See `docs/01-core.md` §Math for the full fixed-point design.
 
 ## 6. Memory Philosophy
 
-> **The single most important rule in Phoenix: after `phx_init()` returns, the
+> **The single most important rule in Phosphorus: after `phx_init()` returns, the
 > engine performs zero general-purpose heap allocations on the hot path.**
 
 There is no `new`/`malloc` in per-frame code. Instead:

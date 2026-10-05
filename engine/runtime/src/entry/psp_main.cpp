@@ -6,7 +6,7 @@
 
 #include <pspkernel.h>
 
-PSP_MODULE_INFO("PhoenixGame", 0, 1, 1);
+PSP_MODULE_INFO("PhosphorusGame", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 // The App's root arena (kTargetPsp: 4 MB) is malloc'd from this heap, next to the framebuffer
 // and libc; the PSP user partition is ~24 MB.

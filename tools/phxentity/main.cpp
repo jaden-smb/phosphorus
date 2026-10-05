@@ -1,4 +1,4 @@
-// tools/phxentity/main.cpp — the standalone DATA TABLE editor: Phoenix Studio's table panel
+// tools/phxentity/main.cpp — the standalone DATA TABLE editor: Phosphorus Studio's table panel
 // (tools/phxstudio/ed_table.cpp) in a window of its own. It edits the phxbin author JSON (typed
 // record tables: entity/prefab stats, items, tuning — never engine blobs; phxbin/phxpack bake what
 // it saves, docs/08 §1) and dogfoods the engine. The document model (editor.h: BinDoc) is

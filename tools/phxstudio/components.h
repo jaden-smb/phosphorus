@@ -1,4 +1,4 @@
-// tools/phxstudio/components.h — the game's reflected components (phx/ecs/reflect.h) as Phoenix
+// tools/phxstudio/components.h — the game's reflected components (phx/ecs/reflect.h) as Phosphorus
 // Studio sees them, and how the table editor's prefab inspector applies one to a prefab record.
 // `make game` writes <project>/build/components.json from the built game itself (the engine's
 // desktop entry, PHX_DUMP_COMPONENTS); this parses it. Headless, unit-tested in the editors suite.

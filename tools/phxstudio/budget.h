@@ -1,4 +1,4 @@
-// tools/phxstudio/budget.h — the model behind Phoenix Studio's BUDGET view: for each target (PC, GBA,
+// tools/phxstudio/budget.h — the model behind Phosphorus Studio's BUDGET view: for each target (PC, GBA,
 // PSP), what the game USED when it ran there (the budget report `make project-budget` writes:
 // phx/runtime/budget.h) next to what the target ALLOWS, plus what the baked bundle for that tier
 // holds (its size, its biggest assets, textures the GBA can't store as tiles). Every limit becomes

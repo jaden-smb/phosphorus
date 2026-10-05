@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""depcheck.py — enforce Phoenix's acyclic module dependency law (docs/00 §3).
+"""depcheck.py — enforce Phosphorus's acyclic module dependency law (docs/00 §3).
 
 Parses `#include "phx/<module>/..."` edges across engine/ and fails the build if any
 module depends on a module that is *above* it in the allowed layering, or if any cycle

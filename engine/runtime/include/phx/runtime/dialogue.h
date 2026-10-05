@@ -1,4 +1,4 @@
-// phx/runtime/dialogue.h — conversations, run from data. A `.dlg` (Phoenix Studio's dialogue
+// phx/runtime/dialogue.h — conversations, run from data. A `.dlg` (Phosphorus Studio's dialogue
 // editor; baked to a Dialogue asset) holds named conversations: each NODE is a speaker's line that
 // leads on to the `next` node or offers CHOICES, and nodes / choices can be gated by a condition
 // (`coins >= 5`) and change variables (`key = 1`, `coins -= 5`). The runner plays one:

@@ -16,7 +16,7 @@ int main() {
 
     Config cfg = Config::from_defaults();        // budgets filled from phx::caps()
     cfg.sim_hz = 60;
-    cfg.title  = "Phoenix Platformer";
+    cfg.title  = "Phosphorus Platformer";
     cfg.width  = 128; cfg.height = 96;
     cfg.total_ram = 32u << 20; cfg.frame_scratch = 256u << 10; cfg.max_entities = 1024;
 

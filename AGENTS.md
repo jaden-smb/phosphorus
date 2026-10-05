@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents (Claude Code, Codex) when workin
 
 ## What this is
 
-Phoenix (`phx`) is a from-scratch C++17 2D/2.5D retro game engine that runs the **same gameplay
+Phosphorus (`phx`) is a from-scratch C++17 2D/2.5D retro game engine that runs the **same gameplay
 code** on Game Boy Advance, PSP, Windows, and Linux. The whole design is organized around closing a
 ~17,000× RAM gap between a 256 KB GBA and a multi-gigabyte PC. Read `README.md` and the numbered
 docs in `docs/` (start at `docs/00-architecture.md`) for the full picture; `STRUCTURE.md` is the
@@ -83,7 +83,7 @@ host/Windows builds pick it up for free from `-DCMAKE_BUILD_TYPE=Release` (which
 make sdl / make gl              # build the windowed SW / OpenGL example (opens a window)
 make sdl-verify / make gl-verify  # render through real SDL/GL, read back, diff vs software golden
 make audio-verify               # open a real SDL audio device, confirm non-silent mixer output
-make studio                     # Phoenix Studio (build/phxstudio): a GAME PROJECT editor (--project DIR); --engine-dev = the whole checkout
+make studio                     # Phosphorus Studio (build/phxstudio): a GAME PROJECT editor (--project DIR); --engine-dev = the whole checkout
 make play PROJECT=dir           # build + bake + run a game project (make game / game-assets [TIER=0|1|2] = one step each)
 make tmap / make entity         # the Studio's map / table editors as standalone windows (phxtmap / phxentity)
 # CMake: -DPHX_USE_SDL=ON also builds phxstudio / phxtmap / phxentity (phxnew always)
@@ -183,7 +183,7 @@ compile-time capability tier and render tier via `cmake/caps_select.cmake` → `
   sheets, BMFont `.fnt`) bake to a glyph table (`tools/phxpack/font.h`) that `phx/runtime/font.h`
   loads into a proportional ui `BitmapFont`. Tools are
   **host-only** (STL allowed); engine code is not.
-- **Phoenix Studio + the GUI editors dogfood the engine** — same App loop / SDL window / soft
+- **Phosphorus Studio + the GUI editors dogfood the engine** — same App loop / SDL window / soft
   renderer as the games, with the tool widget kit (`tools/common/twk.h`, an immediate-mode GUI over
   `phx::UI` rect/image) on top; no separate UI toolkit. Editor panels (`tools/phxstudio/ed_*.cpp`:
   code, sprite/pixel, tilemap, data table) sit behind a `Host` interface (`host.h`); the Studio

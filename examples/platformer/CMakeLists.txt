@@ -24,7 +24,7 @@ target_link_libraries(platformer PRIVATE
 if(PHX_TARGET STREQUAL "gba")
   phx_gba_rom(platformer)                          # link bundle into the ROM, emit .gba
 elseif(PHX_TARGET STREQUAL "psp")
-  phx_psp_eboot(platformer "Phoenix Platformer")   # -> EBOOT.PBP (fixup + prxgen + mksfo + pack-pbp)
+  phx_psp_eboot(platformer "Phosphorus Platformer")   # -> EBOOT.PBP (fixup + prxgen + mksfo + pack-pbp)
 endif()
 # NOTE: the runnable console artifacts (with the asset bundle embedded + a console entry point —
 # gba_main.cpp / psp_main.cpp) are produced by the Makefile: `make gba-platformer` /

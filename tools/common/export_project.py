@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/common/export_project.py — package a built Phoenix GAME PROJECT for players.
+"""tools/common/export_project.py — package a built Phosphorus GAME PROJECT for players.
 
 `make game-export PROJECT=... EXPORT=pc|gba|psp` builds the game (PC: a release build plus its tier-2
 bundle; GBA / PSP: the console build, which embeds its bundle), then runs this to assemble a folder
@@ -102,7 +102,7 @@ def copy_dlls(exe, dest):
 
 # ---- the README a player gets --------------------------------------------------------------------
 def readme(title, target, slug):
-    lines = [title, "=" * len(title), "", "Made with the Phoenix engine.", ""]
+    lines = [title, "=" * len(title), "", "Made with the Phosphorus engine.", ""]
     if target == "pc":
         exe = slug + (".exe" if os.name == "nt" else "")
         lines += ["HOW TO PLAY", f"  Run {exe}. Keep the build folder next to it: it holds the game's assets.", ""]
@@ -135,7 +135,7 @@ def zip_folder(folder):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Package a built Phoenix game project for players.")
+    ap = argparse.ArgumentParser(description="Package a built Phosphorus game project for players.")
     ap.add_argument("project")
     ap.add_argument("--target", choices=("pc", "gba", "psp"), default="pc")
     ap.add_argument("--name", required=True, help="the project's slug (the build's file names)")

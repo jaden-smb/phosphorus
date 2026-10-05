@@ -1,4 +1,4 @@
-# Phoenix Engine — Roadmap, MVP & Scalability
+# Phosphorus Engine — Roadmap, MVP & Scalability
 
 > Estimates assume **2 engineers** (one engine/runtime, one tools/platform) plus
 > part-time art for the example. Durations are calendar weeks; "eng-weeks" in tables is

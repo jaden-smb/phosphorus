@@ -512,7 +512,7 @@ public:
             }
             o += "\n}\n";
         } else {
-            o = "# sprite definition (phxsprite) - edited in Phoenix Studio\n";
+            o = "# sprite definition (phxsprite) - edited in Phosphorus Studio\n";
             o += "sheet " + sheet + " " + std::to_string(frame_w) + " " + std::to_string(frame_h) + "\n";
             for (const SprClip& c : clips)
                 o += "clip " + c.name + " " + std::to_string(c.first) + " " + std::to_string(c.count) + " " +

@@ -3,7 +3,7 @@
 
 int main() {
     using namespace phxtest;
-    std::printf("\nPhoenix Engine — foundation test suite (%d cases)\n", count());
+    std::printf("\nPhosphorus Engine — foundation test suite (%d cases)\n", count());
     std::printf("------------------------------------------------\n");
     for (int i = 0; i < count(); ++i) {
         std::printf("  • %s\n", storage()[i].name);

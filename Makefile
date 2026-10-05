@@ -1,4 +1,4 @@
-# Phoenix Engine — host Makefile (foundation build + tests).
+# Phosphorus Engine — host Makefile (foundation build + tests).
 # The canonical cross-platform build is CMake (docs/07); this Makefile exists so the
 # engine foundation can be built and tested on a host with just g++ + make (no cmake).
 #
@@ -453,7 +453,7 @@ PIPELINE_SRC := engine/core/src/assert.cpp \
 PIPELINE_OBJ := $(patsubst %.cpp,$(HOSTOBJ)/%.o,$(PIPELINE_SRC))
 PIPELINE     := $(BUILD)/phx_pipeline
 
-# The editors suite: Phoenix Studio's headless half — the desktop seam over the null backend's
+# The editors suite: Phosphorus Studio's headless half — the desktop seam over the null backend's
 # scripted queue, the tool widget kit's logic, the code/pixel/sprite/map/table document models
 # (each saved form re-read by the bake's own loaders) and the workspace helpers. Links the App
 # stack so the widget kit's draw path links (it runs with no renderer here).
@@ -727,7 +727,7 @@ game-audio-verify:
 	  $(GAMEAUDIOVER_SRC) $(SDL_LIBS) -o $(BUILD)/game_audio_verify
 	@./$(BUILD)/game_audio_verify
 
-# --- Game projects (a folder with a phxproject.json — what Phoenix Studio opens) --------------
+# --- Game projects (a folder with a phxproject.json — what Phosphorus Studio opens) --------------
 # A project is built against the engine's PUBLIC headers only (engine/*/include): its src/*.cpp +
 # the engine objects + the SDL platform -> <project>/build/<name>; its assets/ are baked by the
 # same converters `check` covers (tools/common/bake_project.py) -> <project>/build/<name>.phxp.
@@ -757,7 +757,7 @@ GAME_NULL_OBJ   := $(HOSTOBJ)/engine/platform/src/null/null_platform.o
 
 game-check:
 	@test -n "$(PROJECT)" || { echo "usage: make game|game-assets|play|game-gba|game-psp PROJECT=path/to/project"; exit 1; }
-	@test -f "$(GAME_DIR)/phxproject.json" || { echo "$(GAME_DIR): not a Phoenix project (no phxproject.json)"; exit 1; }
+	@test -f "$(GAME_DIR)/phxproject.json" || { echo "$(GAME_DIR): not a Phosphorus project (no phxproject.json)"; exit 1; }
 
 game-src-check: game-check
 	@test -n "$(GAME_SRC)" || { echo "$(GAME_DIR)/src has no .cpp files"; exit 1; }
@@ -768,7 +768,7 @@ game: game-src-check $(GAME_ENGINE_OBJ) $(GAME_ENTRY_OBJ) $(SDL_PLATFORM_OBJ)
 	  $(GAME_ENGINE_OBJ) $(if $(GAME_HAS_MAIN),,$(GAME_ENTRY_OBJ)) $(SDL_PLATFORM_OBJ) $(SDL_LIBS) \
 	  -o "$(GAME_DIR)/build/$(GAME_NAME)"
 	@echo "built $(GAME_DIR)/build/$(GAME_NAME)"
-	@# the game's reflected components, for Phoenix Studio's prefab inspector (no window opens)
+	@# the game's reflected components, for Phosphorus Studio's prefab inspector (no window opens)
 	@test -n "$(GAME_HAS_MAIN)" || { cd "$(GAME_DIR)" && PHX_DUMP_COMPONENTS=build/components.json "./build/$(GAME_NAME)"; }
 
 game-assets: game-check $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) $(PHXPACK)
@@ -779,14 +779,14 @@ play: game game-assets
 	@cd "$(GAME_DIR)" && "./build/$(GAME_NAME)"
 
 # Run a project under gdb (a debug build: asserts on, -g): when it crashes, every thread's backtrace
-# lands in the log with file:line (Phoenix Studio's Debug launch; its Run view links them).
+# lands in the log with file:line (Phosphorus Studio's Debug launch; its Run view links them).
 game-debug: game game-assets
 	@command -v gdb >/dev/null 2>&1 || { echo "gdb not found: install it (MSYS2: pacman -S mingw-w64-ucrt-x86_64-gdb; Linux: your package manager)"; exit 1; }
 	@echo "debugging $(GAME_NAME) under gdb (a crash prints its backtrace here)"
 	@cd "$(GAME_DIR)" && gdb -q -batch -ex run -ex "thread apply all bt" --args "./build/$(GAME_NAME)"
 
 # --- GUI editors (SDL) ----------------------------------------------------------------------
-# phxtmap / phxentity: Phoenix Studio's own map and table panels (tools/phxstudio/ed_map.cpp,
+# phxtmap / phxentity: Phosphorus Studio's own map and table panels (tools/phxstudio/ed_map.cpp,
 # ed_table.cpp) in single-document windows (tools/phxstudio/solo.h), so there is one map editor and
 # one table editor in the tree. Both edit AUTHOR formats (.tmj, phxbin JSON) over the ENGINE's own
 # window/renderer; their document models (tools/phxtmap/editor.h, tools/phxentity/editor.h) are
@@ -806,7 +806,7 @@ entity: $(ENTITY_OBJ) $(SDL_PLATFORM_OBJ)
 	$(CXX) $(CXXFLAGS) $(ENTITY_OBJ) $(SDL_PLATFORM_OBJ) $(SDL_LIBS) -o $(BUILD)/phxentity
 	@echo "built $(BUILD)/phxentity  —  data-table editor: ./$(BUILD)/phxentity file.json"
 
-# phxstudio: Phoenix Studio — the one editor for the engine: the module graph as built, every .phxp
+# phxstudio: Phosphorus Studio — the one editor for the engine: the module graph as built, every .phxp
 # with live per-render-tier previews, an Editor workspace (code, sprite/pixel, tilemap and data-
 # table editors over the author formats), and one-click games / editors / gates / suites / console
 # builds with live output. Built from host objects (incremental): only sdl_platform.cpp needs the
@@ -828,7 +828,7 @@ $(SDL_PLATFORM_OBJ): engine/platform/src/sdl/sdl_platform.cpp
 studio: $(STUDIO_OBJ) $(SDL_PLATFORM_OBJ)
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) $(STUDIO_OBJ) $(SDL_PLATFORM_OBJ) $(SDL_LIBS) -pthread -o $(BUILD)/phxstudio
-	@echo "built $(BUILD)/phxstudio  —  Phoenix Studio: ./$(BUILD)/phxstudio  (run from the repo root)"
+	@echo "built $(BUILD)/phxstudio  —  Phosphorus Studio: ./$(BUILD)/phxstudio  (run from the repo root)"
 
 # --- Windows cross build (MinGW-w64) --------------------------------------------------------
 # Cross-compiles the FULL host build — engine + every test/tool binary — into Windows PE32+
@@ -1279,7 +1279,7 @@ $(BUILD)/psp/EBOOT.PBP: $(PSP_OBJ)
 	$(PSP_CXX) $(PSP_FLAGS) $(PSP_OBJ) $(PSP_LDFLAGS) $(PSP_LIBS) -o $(BUILD)/psp/smoke.elf
 	$(PSP_FIXUP) $(BUILD)/psp/smoke.elf
 	$(PSP_PRXGEN) $(BUILD)/psp/smoke.elf $(BUILD)/psp/smoke.prx
-	$(PSP_MKSFO) "Phoenix PSP Smoke" $(BUILD)/psp/PARAM.SFO
+	$(PSP_MKSFO) "Phosphorus PSP Smoke" $(BUILD)/psp/PARAM.SFO
 	$(PSP_PACK) $@ $(BUILD)/psp/PARAM.SFO NULL NULL NULL NULL NULL $(BUILD)/psp/smoke.prx NULL
 
 # The platformer EBOOT: host-bake the bundle, embed it via bin2s (same tool/symbols as the GBA
@@ -1299,7 +1299,7 @@ $(BUILD)/psp/platformer/EBOOT.PBP: $(PSP_PLAT_OBJ) $(BUILD)/psp/bundle.o
 	$(PSP_CXX) $(PSP_FLAGS) $(PSP_PLAT_OBJ) $(BUILD)/psp/bundle.o $(PSP_LDFLAGS) $(PSP_LIBS) -o $(BUILD)/psp/platformer/platformer.elf
 	$(PSP_FIXUP) $(BUILD)/psp/platformer/platformer.elf
 	$(PSP_PRXGEN) $(BUILD)/psp/platformer/platformer.elf $(BUILD)/psp/platformer/platformer.prx
-	$(PSP_MKSFO) "Phoenix Platformer" $(BUILD)/psp/platformer/PARAM.SFO
+	$(PSP_MKSFO) "Phosphorus Platformer" $(BUILD)/psp/platformer/PARAM.SFO
 	$(PSP_PACK) $@ $(BUILD)/psp/platformer/PARAM.SFO NULL NULL NULL NULL NULL $(BUILD)/psp/platformer/platformer.prx NULL
 	@echo "EBOOT: $@ ($$(stat -c%s $@) bytes)"
 
@@ -1325,7 +1325,7 @@ $(BUILD)/psp/gu/EBOOT.PBP: $(PSP_GU_OBJ)
 	$(PSP_CXX) $(PSP_FLAGS) $(PSP_GU_OBJ) $(PSP_LDFLAGS) $(PSP_LIBS) -o $(BUILD)/psp/gu/gu.elf
 	$(PSP_FIXUP) $(BUILD)/psp/gu/gu.elf
 	$(PSP_PRXGEN) $(BUILD)/psp/gu/gu.elf $(BUILD)/psp/gu/gu.prx
-	$(PSP_MKSFO) "Phoenix PSP GU" $(BUILD)/psp/gu/PARAM.SFO
+	$(PSP_MKSFO) "Phosphorus PSP GU" $(BUILD)/psp/gu/PARAM.SFO
 	$(PSP_PACK) $@ $(BUILD)/psp/gu/PARAM.SFO NULL NULL NULL NULL NULL $(BUILD)/psp/gu/gu.prx NULL
 	@echo "EBOOT: $@ ($$(stat -c%s $@) bytes)"
 
@@ -1334,7 +1334,7 @@ $(BUILD)/psp/audio/EBOOT.PBP: $(PSP_AUDIO_OBJ)
 	$(PSP_CXX) $(PSP_FLAGS) $(PSP_AUDIO_OBJ) $(PSP_LDFLAGS) $(PSP_LIBS) -o $(BUILD)/psp/audio/audio.elf
 	$(PSP_FIXUP) $(BUILD)/psp/audio/audio.elf
 	$(PSP_PRXGEN) $(BUILD)/psp/audio/audio.elf $(BUILD)/psp/audio/audio.prx
-	$(PSP_MKSFO) "Phoenix PSP Audio" $(BUILD)/psp/audio/PARAM.SFO
+	$(PSP_MKSFO) "Phosphorus PSP Audio" $(BUILD)/psp/audio/PARAM.SFO
 	$(PSP_PACK) $@ $(BUILD)/psp/audio/PARAM.SFO NULL NULL NULL NULL NULL $(BUILD)/psp/audio/audio.prx NULL
 	@echo "EBOOT: $@ ($$(stat -c%s $@) bytes)"
 
@@ -1346,7 +1346,7 @@ $(BUILD)/psp/save/EBOOT.PBP: $(PSP_SAVE_OBJ)
 	$(PSP_CXX) $(PSP_FLAGS) $(PSP_SAVE_OBJ) $(PSP_LDFLAGS) $(PSP_LIBS) -o $(BUILD)/psp/save/save.elf
 	$(PSP_FIXUP) $(BUILD)/psp/save/save.elf
 	$(PSP_PRXGEN) $(BUILD)/psp/save/save.elf $(BUILD)/psp/save/save.prx
-	$(PSP_MKSFO) "Phoenix PSP Save" $(BUILD)/psp/save/PARAM.SFO
+	$(PSP_MKSFO) "Phosphorus PSP Save" $(BUILD)/psp/save/PARAM.SFO
 	$(PSP_PACK) $@ $(BUILD)/psp/save/PARAM.SFO NULL NULL NULL NULL NULL $(BUILD)/psp/save/save.prx NULL
 	@echo "EBOOT: $@ ($$(stat -c%s $@) bytes)"
 
@@ -1445,7 +1445,7 @@ project-check: $(PHXNEW) $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) $(PHXPACK)
 	@$(MAKE) -s --no-print-directory project-schema PROJECT=$(PROJCHECK_DIR)
 	@echo "PROJECT PASS"
 
-# The component schema `make game` exports for Phoenix Studio (internal to project-check): the
+# The component schema `make game` exports for Phosphorus Studio (internal to project-check): the
 # project on the engine's real desktop entry (null platform), run with PHX_DUMP_COMPONENTS.
 project-schema: game-console-check $(GAME_ENGINE_OBJ) $(GAME_ENTRY_OBJ) $(GAME_NULL_OBJ)
 	@$(CXX) $(CXXFLAGS) $(PUBLIC_INCLUDES) -I"$(GAME_DIR)/src" -I"$(GAME_OUT)/gen" $(GAME_SRC) $(GAME_ENGINE_OBJ) \
@@ -1494,7 +1494,7 @@ game-export: game-check
 # A project's BUDGETS, measured: bake it for every tier, then run it headlessly under each target's
 # profile (PC, GBA on the PPU model in fixed point, PSP) for BUDGET_FRAMES frames of scripted play,
 # writing <project>/build/budget-<target>.json (phx/runtime/budget.h: arena, frame scratch,
-# entities, sprites per frame, sounds, warnings) for Phoenix Studio's Budget view.
+# entities, sprites per frame, sounds, warnings) for Phosphorus Studio's Budget view.
 #   make project-budget PROJECT=path [BUDGET_FRAMES=1800]
 BUDGET_FRAMES ?= 1800
 project-budget: game-console-check $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) $(PHXPACK)
@@ -1505,7 +1505,7 @@ project-budget: game-console-check $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) $
 	  PROJCHECK_FRAMES=$(BUDGET_FRAMES) BUDGET_REPORT="$(GAME_OUT)/budget-gba.json"
 	@$(MAKE) -s --no-print-directory project-run PROJECT="$(GAME_DIR)" PROFILE=psp BUNDLE=t1.phxp \
 	  PROJCHECK_FRAMES=$(BUDGET_FRAMES) BUDGET_REPORT="$(GAME_OUT)/budget-psp.json"
-	@echo "budget: $(GAME_OUT)/budget-desktop.json, budget-gba.json, budget-psp.json (Phoenix Studio: Budget)"
+	@echo "budget: $(GAME_OUT)/budget-desktop.json, budget-gba.json, budget-psp.json (Phosphorus Studio: Budget)"
 
 resource: $(RESOURCE)
 	@./$(RESOURCE)
@@ -1600,7 +1600,7 @@ tools: pipeline $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) $(PHXVIZ) $(PHXPACK)
 
 # --- release packaging (`make dist*`) --------------------------------------------------------
 # Stages per-target release bundles under build/dist/ and archives them, named
-# phoenix-<version>-<what>[-<os>-<arch>]. These are exactly the files the tag-driven release
+# phosphorus-<version>-<what>[-<os>-<arch>]. These are exactly the files the tag-driven release
 # workflow (.github/workflows/release.yml) attaches to the GitHub release — build one locally
 # to see what a release ships. Archives are tar.gz for the host, zip elsewhere (Windows users
 # and emulator frontends expect zip); zipping uses python3's zipfile so no new tool dependency.
@@ -1627,50 +1627,50 @@ docs:
 # Host tools SDK: the five asset-pipeline CLIs + license/readme. (The full dev SDK with headers
 # + static libs installs via CMake: cmake --install / cpack — see RELEASING.md.)
 dist: tools
-	@rm -rf $(DIST)/phoenix-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH)
-	@mkdir -p $(DIST)/phoenix-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH)/bin
+	@rm -rf $(DIST)/phosphorus-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH)
+	@mkdir -p $(DIST)/phosphorus-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH)/bin
 	@cp $(PHXPACK) $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) \
-	  $(DIST)/phoenix-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH)/bin/
-	@cp LICENSE README.md $(DIST)/phoenix-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH)/
-	@tar -C $(DIST) -czf $(DIST)/phoenix-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH).tar.gz \
-	  phoenix-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH)
-	@echo "dist: $(DIST)/phoenix-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH).tar.gz"
+	  $(DIST)/phosphorus-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH)/bin/
+	@cp LICENSE README.md $(DIST)/phosphorus-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH)/
+	@tar -C $(DIST) -czf $(DIST)/phosphorus-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH).tar.gz \
+	  phosphorus-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH)
+	@echo "dist: $(DIST)/phosphorus-$(PHX_VERSION)-tools-$(HOST_OS)-$(HOST_ARCH).tar.gz"
 
 # Windows tools (statically linked PE32+, no runtime DLLs). Depends on `make win`, which
 # cross-builds everything; only the tools ship — the desktop games need the SDL platform
 # backend, which the MinGW static build doesn't carry.
 dist-win: win
-	@rm -rf $(DIST)/phoenix-$(PHX_VERSION)-tools-windows-x86_64
-	@mkdir -p $(DIST)/phoenix-$(PHX_VERSION)-tools-windows-x86_64/bin
+	@rm -rf $(DIST)/phosphorus-$(PHX_VERSION)-tools-windows-x86_64
+	@mkdir -p $(DIST)/phosphorus-$(PHX_VERSION)-tools-windows-x86_64/bin
 	@cp $(BUILD)/win/phxpack.exe $(BUILD)/win/phxsprite.exe $(BUILD)/win/phxtile.exe \
 	  $(BUILD)/win/phxsnd.exe $(BUILD)/win/phxbin.exe \
-	  $(DIST)/phoenix-$(PHX_VERSION)-tools-windows-x86_64/bin/
-	@cp LICENSE README.md $(DIST)/phoenix-$(PHX_VERSION)-tools-windows-x86_64/
-	@cd $(DIST) && $(PHX_ZIP) phoenix-$(PHX_VERSION)-tools-windows-x86_64.zip \
-	  phoenix-$(PHX_VERSION)-tools-windows-x86_64
-	@echo "dist: $(DIST)/phoenix-$(PHX_VERSION)-tools-windows-x86_64.zip"
+	  $(DIST)/phosphorus-$(PHX_VERSION)-tools-windows-x86_64/bin/
+	@cp LICENSE README.md $(DIST)/phosphorus-$(PHX_VERSION)-tools-windows-x86_64/
+	@cd $(DIST) && $(PHX_ZIP) phosphorus-$(PHX_VERSION)-tools-windows-x86_64.zip \
+	  phosphorus-$(PHX_VERSION)-tools-windows-x86_64
+	@echo "dist: $(DIST)/phosphorus-$(PHX_VERSION)-tools-windows-x86_64.zip"
 
 # GBA: the two shipping PPU ROMs (the software-render variants are dev references, not releases).
 dist-gba: gba-platformer-ppu gba-emberwing-ppu gba-tinyllm-ppu
-	@rm -rf $(DIST)/phoenix-$(PHX_VERSION)-gba
-	@mkdir -p $(DIST)/phoenix-$(PHX_VERSION)-gba
+	@rm -rf $(DIST)/phosphorus-$(PHX_VERSION)-gba
+	@mkdir -p $(DIST)/phosphorus-$(PHX_VERSION)-gba
 	@cp $(BUILD)/gba/phx-platformer-ppu.gba $(BUILD)/gba/phx-emberwing-ppu.gba \
 	  $(BUILD)/gba/phx-tinyllm.gba \
-	  $(DIST)/phoenix-$(PHX_VERSION)-gba/
-	@cp LICENSE $(DIST)/phoenix-$(PHX_VERSION)-gba/
-	@cd $(DIST) && $(PHX_ZIP) phoenix-$(PHX_VERSION)-gba.zip phoenix-$(PHX_VERSION)-gba
-	@echo "dist: $(DIST)/phoenix-$(PHX_VERSION)-gba.zip"
+	  $(DIST)/phosphorus-$(PHX_VERSION)-gba/
+	@cp LICENSE $(DIST)/phosphorus-$(PHX_VERSION)-gba/
+	@cd $(DIST) && $(PHX_ZIP) phosphorus-$(PHX_VERSION)-gba.zip phosphorus-$(PHX_VERSION)-gba
+	@echo "dist: $(DIST)/phosphorus-$(PHX_VERSION)-gba.zip"
 
 # PSP: EBOOT.PBP must keep its exact name, one folder per game (drop the folder into
 # ms0:/PSP/GAME/ or point PPSSPP at it).
 dist-psp: psp-platformer psp-emberwing
-	@rm -rf $(DIST)/phoenix-$(PHX_VERSION)-psp
-	@mkdir -p $(DIST)/phoenix-$(PHX_VERSION)-psp/platformer $(DIST)/phoenix-$(PHX_VERSION)-psp/emberwing
-	@cp $(BUILD)/psp/platformer/EBOOT.PBP $(DIST)/phoenix-$(PHX_VERSION)-psp/platformer/
-	@cp $(BUILD)/psp/emberwing/EBOOT.PBP  $(DIST)/phoenix-$(PHX_VERSION)-psp/emberwing/
-	@cp LICENSE $(DIST)/phoenix-$(PHX_VERSION)-psp/
-	@cd $(DIST) && $(PHX_ZIP) phoenix-$(PHX_VERSION)-psp.zip phoenix-$(PHX_VERSION)-psp
-	@echo "dist: $(DIST)/phoenix-$(PHX_VERSION)-psp.zip"
+	@rm -rf $(DIST)/phosphorus-$(PHX_VERSION)-psp
+	@mkdir -p $(DIST)/phosphorus-$(PHX_VERSION)-psp/platformer $(DIST)/phosphorus-$(PHX_VERSION)-psp/emberwing
+	@cp $(BUILD)/psp/platformer/EBOOT.PBP $(DIST)/phosphorus-$(PHX_VERSION)-psp/platformer/
+	@cp $(BUILD)/psp/emberwing/EBOOT.PBP  $(DIST)/phosphorus-$(PHX_VERSION)-psp/emberwing/
+	@cp LICENSE $(DIST)/phosphorus-$(PHX_VERSION)-psp/
+	@cd $(DIST) && $(PHX_ZIP) phosphorus-$(PHX_VERSION)-psp.zip phosphorus-$(PHX_VERSION)-psp
+	@echo "dist: $(DIST)/phosphorus-$(PHX_VERSION)-psp.zip"
 
 build: $(BIN) $(SMOKE) $(RENDER) $(PPU) $(GU) $(PLAYABLE) $(PHYSICS) $(ANIM) $(SCENE) $(UI) $(PLATFORMER) $(PLATAPP) $(EMBERWING) $(EMBERWING_PPU) $(EWAPP) $(AUDIO) $(TEXCACHE) $(PNG) $(SPRITE) $(TILED) $(RESOURCE) $(PHXPACK) $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) $(PIPELINE) $(EDITORS)
 

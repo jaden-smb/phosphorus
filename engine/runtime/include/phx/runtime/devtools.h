@@ -21,7 +21,7 @@
 // game's sprites or budgets.
 //
 // PHX_TRACE=file records every frame's timings (update / render / present / frame µs, steps,
-// entities, sprites) as CSV: Phoenix Studio's Profile launch sets it, and its Budget view's
+// entities, sprites) as CSV: Phosphorus Studio's Profile launch sets it, and its Budget view's
 // Profiler reads build/trace.csv.
 #ifndef PHX_RUNTIME_DEVTOOLS_H
 #define PHX_RUNTIME_DEVTOOLS_H

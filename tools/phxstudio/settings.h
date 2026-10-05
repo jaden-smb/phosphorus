@@ -1,4 +1,4 @@
-// tools/phxstudio/settings.h — Phoenix Studio's own SETTINGS (File > Settings, Studio tab): the UI
+// tools/phxstudio/settings.h — Phosphorus Studio's own SETTINGS (File > Settings, Studio tab): the UI
 // scale, whether to reopen the last session, and where the console SDKs and emulators live. The
 // SDK / emulator paths become environment variables for every launch the Studio runs (DEVKITPRO,
 // DEVKITARM, PSPDEV + its bin/ on PATH, MGBA, PPSSPP: what the engine's Makefile reads), so a GBA
@@ -32,7 +32,7 @@ struct StudioSettings {
     }
 
     std::string to_text() const {
-        std::string o = "# Phoenix Studio settings (File > Settings)\n";
+        std::string o = "# Phosphorus Studio settings (File > Settings)\n";
         o += "scale=" + std::to_string(scale) + "\n";
         o += std::string("restore_session=") + (restore_session ? "1" : "0") + "\n";
         for (const auto& kv : env()) o += kv.first + "=" + kv.second + "\n";

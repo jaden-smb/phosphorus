@@ -75,7 +75,7 @@ int App::run(Game* game) {
     // 5b. sound: nothing starts until the game first plays something (phx/runtime/audio.h)
     audio_.attach(plat_->audio ? plat_->audio() : nullptr, &mem_->persistent(), caps(), cfg_.sim_hz);
 
-    PHX_LOG_INFO("Phoenix boot: '%s'  ram=%uKB  sim=%uHz  ents=%u", cfg_.title,
+    PHX_LOG_INFO("Phosphorus boot: '%s'  ram=%uKB  sim=%uHz  ents=%u", cfg_.title,
                  cfg_.total_ram / 1024u, cfg_.sim_hz, max_ents);
 
     // 6. game start hook
@@ -156,7 +156,7 @@ int App::run(Game* game) {
     audio_.detach();
     plat_->shutdown();
     MemoryRoot::shutdown(mem_);
-    PHX_LOG_INFO("Phoenix shutdown after %llu frames", (unsigned long long)frame_);
+    PHX_LOG_INFO("Phosphorus shutdown after %llu frames", (unsigned long long)frame_);
     return 0;
 }
 

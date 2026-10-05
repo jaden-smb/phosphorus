@@ -25,7 +25,7 @@ using namespace game;
 namespace {
 // The PPU build of this suite (phx_emberwing_ppu) bakes and saves to its own files: `make check -j`
 // runs the soft and PPU builds at once, and a shared save let one run clobber the other's. The soft
-// build keeps build/emberwing.phxp (Phoenix Studio and examples/emberwing/phxproject.json open it).
+// build keeps build/emberwing.phxp (Phosphorus Studio and examples/emberwing/phxproject.json open it).
 std::string g_bundle = "build/emberwing.phxp", g_save = "build/emberwing.sav";
 const char* kBundle = nullptr;
 const char* kSave   = nullptr;

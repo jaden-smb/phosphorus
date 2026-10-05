@@ -3,7 +3,7 @@
 // game's own allocations), the frame scratch, entities, sprites per frame (and any the target had
 // to drop), tiles, sounds, and the warnings / errors the engine logged. `make project-budget`
 // runs a project headlessly under each target's profile (PC, GBA, PSP) with scripted play and
-// writes build/budget-<target>.json; Phoenix Studio's Budget view shows them.
+// writes build/budget-<target>.json; Phosphorus Studio's Budget view shows them.
 //
 // Host builds only (stdio); linked by the desktop game build and the headless project runs.
 #ifndef PHX_RUNTIME_BUDGET_H

@@ -8,7 +8,7 @@
 //   * the level loader (phx/runtime/level.h) attaches the components a prefab lists in its
 //     `components` column ("Enemy Coin") and fills each field from the `Enemy_range` column or
 //     the spawn's `Enemy_range` property, else keeps the C++ default above;
-//   * `make game` asks the built game for its registry (write_component_schema) and Phoenix
+//   * `make game` asks the built game for its registry (write_component_schema) and Phosphorus
 //     Studio's table editor offers those components, fields and defaults on each prefab record.
 //
 // Field types are the plain-data ones a component holds: 8/16/32-bit ints, bool, scalar (float on

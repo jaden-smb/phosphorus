@@ -1,6 +1,6 @@
 // engine/runtime/src/component_schema.cpp — write the program's reflected components
 // (phx/ecs/reflect.h) as JSON for tools: names, fields, types and the C++ defaults. The desktop
-// entry calls it when PHX_DUMP_COMPONENTS names a file (`make game` does, so Phoenix Studio can
+// entry calls it when PHX_DUMP_COMPONENTS names a file (`make game` does, so Phosphorus Studio can
 // show a game's components). Host-only: linked by desktop builds, never by a ROM or an EBOOT.
 #include "phx/runtime/main.h"
 #include "phx/ecs/reflect.h"

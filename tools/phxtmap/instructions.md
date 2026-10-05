@@ -2,13 +2,13 @@
 
 ## What it is for
 
-Level layout for Phoenix games: tile layers drawn with the **real tileset art**, per-tile
+Level layout for Phosphorus games: tile layers drawn with the **real tileset art**, per-tile
 **collision flags**, **entity spawns**, **parallax** factors and map size. Maps are saved as the
 open **Tiled `.tmj`** author format, never as engine blobs; `phxtile`/`phxpack` bake what it saves
 (docs/08 §1). Anything it writes opens in the full Tiled editor, art included, and the reverse is
 true too.
 
-`phxtmap` is **Phoenix Studio's map editor in a window of its own**. It hosts the Studio's map
+`phxtmap` is **Phosphorus Studio's map editor in a window of its own**. It hosts the Studio's map
 panel (`tools/phxstudio/ed_map.cpp`) in a one-document shell (`tools/phxstudio/solo.h`), so the
 tools, keys and file handling are identical in both. Inside the Studio, open any `.tmj` from the
 Explorer instead ([Studio guide](../phxstudio/instructions.md#tilemap-editor)).
@@ -79,7 +79,7 @@ The side panel has four tabs:
 - **Tiles**: the tileset palette. Click for a tile and drag for a stamp. Right-click a tile to set
   its collision (or use the none / solid / one-way / hazard buttons for the brush tile, or **V**).
   A map without a tileset image gets **create tileset…**, which writes a PNG of tiles next to the
-  map and links it. Painting the tiles themselves happens in Phoenix Studio: double-click a tile
+  map and links it. Painting the tiles themselves happens in Phosphorus Studio: double-click a tile
   there to open the tileset zoomed on it, and the map redraws when the PNG is saved
   ([Studio guide](../phxstudio/instructions.md#tilemap-editor)).
 - **Layers**: visibility (editor-only), add, delete, reorder, rename, and horizontal/vertical

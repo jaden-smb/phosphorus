@@ -14,7 +14,7 @@
 #include "bundle_reader.h"   // the assembler's merge logic
 #include "editor.h"                        // phxtmap's document model (load/edit/save .tmj)
 #include "../../tools/phxentity/editor.h"     // phxentity's document model (phxbin JSON tables)
-#include "../../tools/phxstudio/model.h"      // Phoenix Studio's headless model
+#include "../../tools/phxstudio/model.h"      // Phosphorus Studio's headless model
 #include "../../tools/phxstudio/budget.h"     // ... and its Budget view
 
 #include "fixtures/png_fixtures.h"
@@ -576,7 +576,7 @@ int main() {
     check(gen_ok, "phxbin emitted a matching .gen.h");
 
 
-    // --- Phoenix Studio: the headless document model behind tools/phxstudio ----------------
+    // --- Phosphorus Studio: the headless document model behind tools/phxstudio ----------------
     // Everything the studio draws comes from these functions, so they are held to the real
     // tree (depcheck's layer table, caps.h, the Makefile) and to the real bundle format.
     {
@@ -647,7 +647,7 @@ int main() {
         sw.add_sprite("s_hero", "s_tiles", 8, 8, 2, { phx::SpriteClipDef{ phx::fnv1a("walk"), 0, 2, 8, 1, 0 } });
         sw.add_sound("s_tone", pcm, 6, 22050);
         sw.add_spawns("s_map", spawns);
-        const char blob[] = "phoenix";
+        const char blob[] = "phosphorus";
         sw.add_blob("s_blob", blob, sizeof(blob));
         check(sw.write("build/p_studio.phxp"), "studio: write the fixture bundle");
 

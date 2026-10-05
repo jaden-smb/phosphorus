@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/common/bake_project.py — bake a Phoenix GAME PROJECT's assets into one .phxp bundle.
+"""tools/common/bake_project.py — bake a Phosphorus GAME PROJECT's assets into one .phxp bundle.
 
 Reads <project>/phxproject.json (its "assets" folders, default ["assets"]) and runs the SAME
 converters `make check` covers on every author file it finds, then the assembler:
@@ -30,7 +30,7 @@ def slug(name):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Bake a Phoenix game project's assets into one .phxp bundle.")
+    ap = argparse.ArgumentParser(description="Bake a Phosphorus game project's assets into one .phxp bundle.")
     ap.add_argument("project", help="the project folder (holding phxproject.json)")
     ap.add_argument("--tools", required=True, help="folder with the built phxsprite/phxtile/phxsnd/phxbin/phxpack")
     ap.add_argument("--tier", type=int, default=2, choices=(0, 1, 2), help="0 GBA, 1 PSP, 2 PC (default)")

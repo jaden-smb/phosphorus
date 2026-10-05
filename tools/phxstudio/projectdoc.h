@@ -1,4 +1,4 @@
-// tools/phxstudio/projectdoc.h — a Phoenix GAME PROJECT and the rules for what Phoenix Studio may
+// tools/phxstudio/projectdoc.h — a Phosphorus GAME PROJECT and the rules for what Phosphorus Studio may
 // touch while one is open. Headless and unit-tested in the editors suite.
 //
 // A project is a folder holding a `phxproject.json`:
@@ -10,7 +10,7 @@
 //     "launches": [ { "label": "Play", "group": "play", "command": "make -C \"$PHX_ROOT\" play PROJECT=\"$PHX_PROJECT\"",
 //                     "blurb": "...", "needs": ["sdl2-config"], "windowed": true } ] }
 //
-// Launch commands run from the PROJECT folder with $PHX_ROOT (the Phoenix checkout) and
+// Launch commands run from the PROJECT folder with $PHX_ROOT (the Phosphorus checkout) and
 // $PHX_PROJECT (the project folder) exported. Paths in the file are relative to the project.
 //
 // The AccessPolicy is the "professional project" boundary: with a project open, the Studio may
@@ -61,7 +61,7 @@ enum class Access : uint8_t { None, Read, Write };
 
 struct AccessPolicy {
     bool engine_dev = false;     // engine maintenance: everything is editable
-    std::string engine_root;     // canonical Phoenix checkout
+    std::string engine_root;     // canonical Phosphorus checkout
     std::string project_dir;     // canonical project folder ("" = no project open)
 
     // The engine's public API: engine/<module>/include/**.h(pp)
@@ -91,7 +91,7 @@ struct AccessPolicy {
     // not sit inside the engine's own source folders.
     std::string project_dir_problem(const std::string& dir) const {
         const std::string c = canon_path(dir);
-        if (path_within(engine_root, c)) return "a project can't contain the Phoenix engine itself";
+        if (path_within(engine_root, c)) return "a project can't contain the Phosphorus engine itself";
         for (const char* sub : { "engine", "tools", "tests", "cmake", "docs", ".github" })
             if (path_within(c, engine_root + "/" + sub))
                 return std::string("a project can't live inside the engine's ") + sub + "/ folder";
@@ -300,11 +300,11 @@ inline std::string project_slug(const std::string& name) {
 namespace tmpl {
 
 inline const char* main_cpp() {
-    return R"CPP(// src/main.cpp — @NAME@: a Phoenix game (made from the Phoenix Studio project template).
+    return R"CPP(// src/main.cpp — @NAME@: a Phosphorus game (made from the Phosphorus Studio project template).
 //
 // One source for every target: gameplay code talks to the engine's public API only (phx/...),
 // never to a platform header, and the engine supplies main() for each target (PHX_GAME, at the
-// bottom). Build + run from Phoenix Studio (Run > Play, GBA ROM, PSP EBOOT) or from the engine
+// bottom). Build + run from Phosphorus Studio (Run > Play, GBA ROM, PSP EBOOT) or from the engine
 // checkout:  make play | play-gba | play-psp PROJECT=path/to/this/project
 //
 // The GAME is data you edit in the Studio, not code:
@@ -499,7 +499,7 @@ inline std::string flow_json(const std::string& name) {
            " {\"name\":\"lives\",\"type\":\"u8\"}, {\"name\":\"counter\",\"type\":\"str16\"}, {\"name\":\"label\",\"type\":\"str16\"},"
            " {\"name\":\"music\",\"type\":\"str16\"}],\n"
            "  \"records\":[\n"
-           "    {\"name\":\"title\", \"kind\":\"title\", \"text\":\"" + title + "|a Phoenix game\", \"music\":\"theme\"},\n"
+           "    {\"name\":\"title\", \"kind\":\"title\", \"text\":\"" + title + "|a Phosphorus game\", \"music\":\"theme\"},\n"
            "    {\"name\":\"level1\", \"kind\":\"level\", \"map\":\"level\", \"text\":\"LEVEL 1\", \"lives\":3,"
            " \"counter\":\"coins\", \"label\":\"COINS\"},\n"
            "    {\"name\":\"end\", \"kind\":\"end\", \"text\":\"YOU WIN!|thanks for playing\"},\n"
@@ -664,18 +664,18 @@ inline bool create_project(const std::string& dir, const std::string& name, std:
     ProjectDoc p;
     p.dir = canon_path(dir);
     p.name = name.empty() ? slug : name;
-    p.description = "A Phoenix game";
+    p.description = "A Phosphorus game";
     p.bundles = { "build/" + slug + ".phxp" };
     p.launches = ProjectDoc::standard_launches();
     if (!p.save(&e)) return fail(e);
     const std::string readme =
         "# " + p.name + "\n\n"
-        "A Phoenix game project (open it in Phoenix Studio: `phxstudio --project " + dir + "`).\n\n"
+        "A Phosphorus game project (open it in Phosphorus Studio: `phxstudio --project " + dir + "`).\n\n"
         "| Folder | What lives there |\n|---|---|\n"
         "| `src/` | the game's C++ (it uses the engine's public API, `phx/...`, only) |\n"
         "| `assets/` | author files: sprites (`.png` + `.sprdef`), maps (`.tmj`), sound effects (`.sfx`), music (`.song`), sounds (`.wav`), fonts (`.font`), dialogue (`.dlg`), data tables (`.json`) |\n"
         "| `build/` | what the build makes: the game (`build/" + slug + "`) and its bundle (`build/" + slug + ".phxp`) |\n\n"
-        "From the Phoenix checkout: `make play PROJECT=" + dir + "` builds, bakes and runs it;\n"
+        "From the Phosphorus checkout: `make play PROJECT=" + dir + "` builds, bakes and runs it;\n"
         "`make game` / `make game-assets` do one step each.\n";
     if (!write("README.md", readme)) return fail("cannot write README.md");
     return true;

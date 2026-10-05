@@ -126,7 +126,7 @@ Environment knobs for the headless runner: `TINYLLM_MODEL` (a `.phxllm` path), `
 
 Full reference: [`tools/instructions.md`](tools/instructions.md) (usage, options, the complete
 `.phxllm` layout), matching the convention every tool folder here follows. In short — the host
-half. It does every expensive, fallible thing offline (Phoenix's pipeline philosophy,
+half. It does every expensive, fallible thing offline (Phosphorus's pipeline philosophy,
 `docs/08`) so the console only streams int8.
 
 ```bash

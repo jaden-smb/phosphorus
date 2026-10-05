@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Phoenix are documented here. The format follows
+All notable changes to Phosphorus are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [semantic versioning](https://semver.org) (pre-1.0: MINOR may break, PATCH never does — see
 [RELEASING.md](RELEASING.md)).
@@ -8,7 +8,12 @@ All notable changes to Phoenix are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
-- **Phoenix Studio's text is now a real typeface, not pixel art.** Every label, menu, editor line
+
+- Renamed the engine to **Phosphorus Engine** and the editor to **Phosphorus Studio**.
+  CMake SDK packages and release archives now use `phosphorus`; `phx` APIs, commands,
+  filenames, and asset formats remain unchanged.
+
+- **Phosphorus Studio's text is now a real typeface, not pixel art.** Every label, menu, editor line
   and log line is JetBrains Mono (SIL OFL 1.1), anti-aliased and drawn at window resolution, so it
   stays sharp at any UI scale.
   - The layout is unchanged: the face is sized so each character still advances exactly 6 canvas
@@ -35,7 +40,7 @@ All notable changes to Phoenix are documented here. The format follows
       reflected fields while the game runs.
     - A **frame-time graph** of each frame's work against the step budget.
     - `PHX_TRACE=file`: a per-frame timing CSV. `DevHooks` gains `stop`, called at teardown.
-  - **Phoenix Studio**:
+  - **Phosphorus Studio**:
     - A **Profiler**, in the Budget view: a Profile launch records `build/trace.csv`. The view
       shows a per-frame update/render/present graph, frames whose work overran the step, per-phase
       avg/p50/p95/max and the heaviest frames.
@@ -57,7 +62,7 @@ All notable changes to Phoenix are documented here. The format follows
   - A new desktop seam call, `phx_desktop_use_exe_dir()`, lets an exported game find
     `build/<name>.phxp` from its own folder, so it runs when double-clicked or started from any
     directory. This was verified with only the Windows system PATH.
-  - Phoenix Studio adds **Export for PC / GBA / PSP** launches.
+  - Phosphorus Studio adds **Export for PC / GBA / PSP** launches.
 - **Measured budgets.**
   - `App::peaks()` tracks each run's high-water marks: entities, sprites per frame, dropped
     sprites, tiles, frame scratch and the arena.
@@ -67,7 +72,7 @@ All notable changes to Phoenix are documented here. The format follows
   - `make project-budget PROJECT=...` bakes every tier and runs the game headlessly as PC, GBA
     (fixed-point, PPU model, GBA budget) and PSP for 30 s of scripted play, writing
     `build/budget-<target>.json`.
-  - Phoenix Studio's new **Budget** view shows each target's card: memory, entities, sprites per
+  - Phosphorus Studio's new **Budget** view shows each target's card: memory, entities, sprites per
     frame, frame scratch, warnings, ROM or bundle size, textures the GBA can't store as tiles, and
     the biggest assets. Each figure is marked ok, close (over 90%) or over, and the view flags
     reports older than the project's assets or code.
@@ -85,7 +90,7 @@ All notable changes to Phoenix are documented here. The format follows
     new stock **`Talk`** component's conversation when the player presses Up at it (with an
     "UP: TALK" hint). Conversation variables are the flow's totals, so `do coins -= 2` changes
     the HUD.
-  - Phoenix Studio gains a **dialogue editor**: conversations and speakers; line cards with
+  - Phosphorus Studio gains a **dialogue editor**: conversations and speakers; line cards with
     speaker, text, next, `if` / `do` and choices; a play panel running the compiled
     conversation by the runtime's rules, with editable variables; and the bake's
     problems/warnings. There is also a **New dialogue** command, and the asset view lists a
@@ -121,7 +126,7 @@ All notable changes to Phoenix are documented here. The format follows
   - `phxsnd`, `phxpack` and `bake_project.py` bake both to ordinary Sound assets named after the
     file, including the tier-0 resample. The runtime is unchanged: `GameAudio::play()` /
     `play_music()`.
-  - Phoenix Studio gains a **sound effect editor** (presets, randomize/mutate, parameter sliders,
+  - Phosphorus Studio gains a **sound effect editor** (presets, randomize/mutate, parameter sliders,
     waveform, auto-play) and a **song editor**. The song editor has a tracker grid with piano-key
     note entry, patterns, an order list and instruments, and plays the song or a pattern with a
     playhead.
@@ -142,7 +147,7 @@ All notable changes to Phoenix are documented here. The format follows
   `Level` gives every spawned animator its sprite's transitions, read in place from the bundle
   (the baked layout is `AnimEdge`'s). A sprite keeps up to 12 clips, up from 8. When a sprite has transitions, `PlatformerController` sends it
   `jump`/`fall`/`land`/`move`/`stop`/`hurt` instead of playing clips by name, and games call
-  `phx::anim_trigger(world, e, "attack"_hash)`. Phoenix Studio's sprite editor gains a
+  `phx::anim_trigger(world, e, "attack"_hash)`. Phosphorus Studio's sprite editor gains a
   Transitions list in the Clips tab. Renaming or deleting a clip updates its transitions, and the
   asset view counts them. The project template's hero gains jump and land frames and a six-edge
   state machine. `AnimStateMachine::Edge` is now `AnimEdge`, whose trigger is a `NameHash`.
@@ -267,7 +272,7 @@ All notable changes to Phoenix are documented here. The format follows
     and EBOOT.
   - `bin2s.py --name SYM`; launch `needs` may name `$DEVKITARM`; `PSPDEV` defaults to the
     install that `psp-g++` on `PATH` comes from.
-- **Editing assets after they're made, in Phoenix Studio.**
+- **Editing assets after they're made, in Phosphorus Studio.**
   - The Assets view has **edit source**: it opens the file an asset was baked from (a texture's
     PNG, a sprite's def, a map's `.tmj`, a table's `.json`). Double-clicking an asset does the
     same. In a project, **bake** rebakes the assets and reloads the bundle.
@@ -277,7 +282,7 @@ All notable changes to Phoenix are documented here. The format follows
   - In the map editor, double-click a palette tile (or right-click > Edit tile) to paint it,
     zoomed on that tile. Open maps redraw when the tileset PNG is saved. A map drawn with swatch
     colours gets **create tileset…**, which writes a real tileset PNG to paint.
-- **Game projects and a project boundary in Phoenix Studio.**
+- **Game projects and a project boundary in Phosphorus Studio.**
   - A project is a folder with a `phxproject.json` (name, code and asset folders, bundles, and the
     Run view's launches). The Studio opens one project at a time (`--project DIR`, a project
     picker, or File > New / Open / Close project).
@@ -295,7 +300,7 @@ All notable changes to Phoenix are documented here. The format follows
   `make play PROJECT=path`. Games compile against the engine's **public headers only**.
 - `phxproject.json` for the examples (`emberwing`, `platformer`, `miracle-player`, `tinyllm`), so
   they open as projects.
-- **Phoenix Studio is now the editor for the engine.** A new **Editor** view (the default)
+- **Phosphorus Studio is now the editor for the engine.** A new **Editor** view (the default)
   has an Explorer over the repository, tabs of documents, quick open (Ctrl+P), New-asset
   templates, save / save-all with confirm-on-close, reload-on-external-change and session
   restore. Each document opens in its own editor:
@@ -337,7 +342,7 @@ All notable changes to Phoenix are documented here. The format follows
 - **`make editors`** (on `check`): a new headless suite that covers the desktop seam queue, the
   widget kit, and every editor document model. Each saved form is re-read by the bake's own
   loaders (`load_sprdef`, `load_sprjson`, `tiled_load`, `build_bin`).
-- **Phoenix Studio (`tools/phxstudio`, `make studio`) — a graphical hub over the whole engine**,
+- **Phosphorus Studio (`tools/phxstudio`, `make studio`) — a graphical hub over the whole engine**,
   built on the engine itself (App loop, SDL window, software golden renderer, `phx::ui`).
   *Overview*: the module dependency graph as built (layers from `depcheck.py`, edges from real
   `#include`s) with per-module details, and the GBA/PSP/PC capability tiers parsed from
@@ -362,7 +367,7 @@ All notable changes to Phoenix are documented here. The format follows
 - The `emberwing` and `emberwing-ppu` suites wrote the same bundle and save file, so under
   `make check -j` one run could clobber the other's save ("the goal run's clear was persisted").
   The PPU build now uses its own `build/emberwing_ppu.*`.
-- Phoenix Studio on Windows: opened files kept native `\` separators, so a sprite def naming its
+- Phosphorus Studio on Windows: opened files kept native `\` separators, so a sprite def naming its
   sheet by bare file name (every template sprite) failed to open with "the sheet is outside the
   project". Opened paths and bundle listings now always use `/`.
 - **`make game-assets TIER=0|1` rebuilt every host tool.** A bake tier was also taken as the
@@ -370,7 +375,7 @@ All notable changes to Phoenix are documented here. The format follows
   only a bake tier.
 - **The GBA PPU backend crashed on an arena too small for its stores.** It wrote through a null
   allocation; `Renderer::create` now fails with an error instead.
-- **Phoenix Studio's Run view on Windows.** Launches went to `cmd.exe`, which can't run their
+- **Phosphorus Studio's Run view on Windows.** Launches went to `cmd.exe`, which can't run their
   POSIX shell commands, so every Play, Build and suite failed at once with no output. They now
   run through MSYS2's or Git for Windows' `sh.exe`, found automatically (or set `PHX_SH`), and
   **Stop** ends the whole process tree. Launches that need a tool (`sdl2-config`, …) are no
@@ -423,7 +428,7 @@ First tagged release: the complete engine slice proven on all four targets.
   (pspsdk); CI gates: full suite, cross-tier determinism, ASan+UBSan, release config, Wine-run
   Windows suite, console cross builds.
 - **Release plumbing** — single-source version header (`phx/core/version.h`), `make dist*`
-  packaging, CMake install/`find_package(phoenix)`/CPack SDK, tag-driven release workflow.
+  packaging, CMake install/`find_package(phosphorus)`/CPack SDK, tag-driven release workflow.
 - `make gba-miracle-ppu`: the "A Small Miracle" visualizer as a native-PPU GBA ROM (the shipping
   console build). The spectrogram renders as a **BG tilemap** (the PPU can't scale/tint OBJ, so
   ui.rect bars can't work there — the tilemap is the native answer), particles are 8×8 OBJ sparks,

@@ -1,4 +1,4 @@
-# Phoenix Engine — root build. One tree -> four runtime binaries + host tools.
+# Phosphorus Engine — root build. One tree -> four runtime binaries + host tools.
 # See docs/07-build-system.md for the full strategy.
 cmake_minimum_required(VERSION 3.20)
 
@@ -13,15 +13,15 @@ foreach(_part MAJOR MINOR PATCH)
   set(PHX_VERSION_${_part} ${_v})
 endforeach()
 
-project(PhoenixEngine
+project(PhosphorusEngine
   VERSION ${PHX_VERSION_MAJOR}.${PHX_VERSION_MINOR}.${PHX_VERSION_PATCH}
   LANGUAGES C CXX)
-message(STATUS "Phoenix version: ${PROJECT_VERSION}")
+message(STATUS "Phosphorus version: ${PROJECT_VERSION}")
 
 # ---- target selection ------------------------------------------------------
 set(PHX_TARGET "linux" CACHE STRING "Target platform: linux | windows | gba | psp")
 set_property(CACHE PHX_TARGET PROPERTY STRINGS linux windows gba psp)
-message(STATUS "Phoenix target: ${PHX_TARGET}")
+message(STATUS "Phosphorus target: ${PHX_TARGET}")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -77,7 +77,7 @@ add_subdirectory(examples/tinyllm)
 # ---- host-only tools (always built for the host, even when cross-compiling) -
 # The asset pipeline (docs/08): per-format CONVERTERS bake author sources into intermediate
 # .phx* files; the phxpack ASSEMBLER merges them into assets.phxp. They share one bake path
-# (tools/phxpack/builders.h). Phoenix Studio (tools/phxstudio): phxnew always; phxstudio and the
+# (tools/phxpack/builders.h). Phosphorus Studio (tools/phxstudio): phxnew always; phxstudio and the
 # standalone phxtmap / phxentity editors when configured with -DPHX_USE_SDL=ON (they open a
 # window through the engine's SDL platform backend).
 if(NOT CMAKE_CROSSCOMPILING)
@@ -94,18 +94,18 @@ endif()
 
 # ---- install / package (host SDK only) -------------------------------------
 # `cmake --install` lays down a host SDK: the 13 static module libs + public headers + the five
-# asset-pipeline CLIs + a find_package(phoenix) config; `cpack` wraps the same tree in a
+# asset-pipeline CLIs + a find_package(phosphorus) config; `cpack` wraps the same tree in a
 # versioned tar.gz. Console targets deliberately have no install flow — their shippable
 # artifacts are the ROM/EBOOT bundles from `make dist-gba` / `make dist-psp` (see RELEASING.md).
 if(NOT CMAKE_CROSSCOMPILING)
   include(GNUInstallDirs)
   include(CMakePackageConfigHelpers)
-  # GNUInstallDirs derives DOCDIR from PROJECT_NAME ("PhoenixEngine"); ship as plain "phoenix".
-  set(CMAKE_INSTALL_DOCDIR ${CMAKE_INSTALL_DATAROOTDIR}/doc/phoenix)
+  # GNUInstallDirs derives DOCDIR from PROJECT_NAME ("PhosphorusEngine"); ship as plain "phosphorus".
+  set(CMAKE_INSTALL_DOCDIR ${CMAKE_INSTALL_DATAROOTDIR}/doc/phosphorus)
 
   set(_phx_modules core memory platform render ecs input audio resource scene physics anim ui runtime)
   foreach(_m ${_phx_modules})
-    install(TARGETS phx_${_m} EXPORT phoenix-targets
+    install(TARGETS phx_${_m} EXPORT phosphorus-targets
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     install(DIRECTORY engine/${_m}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   endforeach()
@@ -113,30 +113,30 @@ if(NOT CMAKE_CROSSCOMPILING)
   install(TARGETS phxpack phxsprite phxtile phxsnd phxbin phxviz
           RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-  # find_package(phoenix CONFIG) support: import the libs as phoenix::phx_<module>.
-  install(EXPORT phoenix-targets
-          FILE phoenix-targets.cmake
-          NAMESPACE phoenix::
-          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/phoenix)
-  configure_package_config_file(cmake/phoenix-config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/phoenix-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/phoenix)
+  # find_package(phosphorus CONFIG) support: import the libs as phosphorus::phx_<module>.
+  install(EXPORT phosphorus-targets
+          FILE phosphorus-targets.cmake
+          NAMESPACE phosphorus::
+          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/phosphorus)
+  configure_package_config_file(cmake/phosphorus-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/phosphorus-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/phosphorus)
   # Pre-1.0: any MINOR bump may break API/asset formats, so compatibility is same-minor.
   write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/phoenix-config-version.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/phosphorus-config-version.cmake
     COMPATIBILITY SameMinorVersion)
   install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/phoenix-config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/phoenix-config-version.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/phoenix)
+    ${CMAKE_CURRENT_BINARY_DIR}/phosphorus-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/phosphorus-config-version.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/phosphorus)
   install(FILES LICENSE README.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
-  set(CPACK_PACKAGE_NAME phoenix)
-  set(CPACK_PACKAGE_VENDOR "Phoenix Engine")
+  set(CPACK_PACKAGE_NAME phosphorus)
+  set(CPACK_PACKAGE_VENDOR "Phosphorus Engine")
   set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
   set(CPACK_GENERATOR TGZ)
   string(TOLOWER ${CMAKE_SYSTEM_NAME} _phx_os)
-  set(CPACK_PACKAGE_FILE_NAME phoenix-${PROJECT_VERSION}-sdk-${_phx_os}-${CMAKE_SYSTEM_PROCESSOR})
+  set(CPACK_PACKAGE_FILE_NAME phosphorus-${PROJECT_VERSION}-sdk-${_phx_os}-${CMAKE_SYSTEM_PROCESSOR})
   include(CPack)
 endif()
 

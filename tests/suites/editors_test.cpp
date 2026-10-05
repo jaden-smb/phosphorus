@@ -1,4 +1,4 @@
-// tests/suites/editors_test.cpp — the EDITORS suite: everything behind Phoenix Studio and the
+// tests/suites/editors_test.cpp — the EDITORS suite: everything behind Phosphorus Studio and the
 // standalone editors that can be proven without a window.
 //
 //   - the desktop seam extension over the null backend's scripted queue (phx/platform/desktop.h)
@@ -1063,8 +1063,8 @@ PHX_TEST(access_policy_is_the_project_boundary) {
 PHX_TEST(project_launch_command_and_discovery) {
     ProjectLaunch l;
     l.label = "Play"; l.command = "make -C \"$PHX_ROOT\" play PROJECT=\"$PHX_PROJECT\"";
-    const std::string c = launch_shell_command(l, "/src/phoenix", "/games/it's mine");
-    CHECK(c.find("export PHX_ROOT='/src/phoenix' PHX_PROJECT='/games/it'\\''s mine'") == 0);
+    const std::string c = launch_shell_command(l, "/src/phosphorus", "/games/it's mine");
+    CHECK(c.find("export PHX_ROOT='/src/phosphorus' PHX_PROJECT='/games/it'\\''s mine'") == 0);
     CHECK(c.find("cd '/games/it'\\''s mine' && make -C") != std::string::npos);
     namespace fs = std::filesystem;
     std::error_code ec;
@@ -1206,7 +1206,7 @@ PHX_TEST(new_project_template_is_complete_and_bakeable) {
         }
         phxtool::BinDoc fd;
         CHECK(phxtool::BinDoc::load(fj, fd) && fd.records.size() == 4 && fd.str_cell(0, 0) == "title" &&
-              fd.str_cell(1, 2) == "level" && fd.str_cell(0, 3) == "Test Quest|a Phoenix game");
+              fd.str_cell(1, 2) == "level" && fd.str_cell(0, 3) == "Test Quest|a Phosphorus game");
         CHECK(fs::exists(dir + "/assets/font.png") && fs::exists(dir + "/assets/door.png") &&
               main_cpp.find("flow.update(app, dt)") != std::string::npos);
         for (const auto& s : tm.spawns) CHECK(std::find(types.begin(), types.end(), s.type) != types.end());
@@ -1252,7 +1252,7 @@ PHX_TEST(new_project_template_is_complete_and_bakeable) {
 
 int main() {
     using namespace phxtest;
-    std::printf("\nPhoenix Engine — editors suite (%d cases)\n", count());
+    std::printf("\nPhosphorus Engine — editors suite (%d cases)\n", count());
     for (int i = 0; i < count(); ++i) {
         std::printf("  . %s\n", storage()[i].name);
         storage()[i].fn();

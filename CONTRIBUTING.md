@@ -1,6 +1,6 @@
-# Contributing to Phoenix
+# Contributing to Phosphorus
 
-Thanks for your interest in Phoenix (`phx`)! This document covers everything you need to build
+Thanks for your interest in Phosphorus (`phx`)! This document covers everything you need to build
 the engine, run its gates, and land a change. Design background lives in the numbered docs under
 [`docs/`](docs/) (start with [`docs/00-architecture.md`](docs/00-architecture.md));
 [`STRUCTURE.md`](STRUCTURE.md) is the annotated folder tree.

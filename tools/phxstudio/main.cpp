@@ -1,4 +1,4 @@
-// tools/phxstudio/main.cpp — Phoenix Studio: the one editor for the whole engine. A graphical hub
+// tools/phxstudio/main.cpp — Phosphorus Studio: the one editor for the whole engine. A graphical hub
 // over the repository, built (like the games) ON the engine itself — the same App loop, SDL
 // window, software golden renderer and phx::ui primitives (docs/gui-editor-feasibility.md,
 // Option A), with the tool widget kit (tools/common/twk.h) on top. Four views:
@@ -94,7 +94,7 @@ const Rgba line   = rgba(72, 74, 100);
 const Rgba text   = rgba(230, 230, 240);
 const Rgba dim    = rgba(146, 148, 172);
 const Rgba faint  = rgba(96, 98, 124);
-const Rgba accent = rgba(255, 138, 48);   // phoenix orange
+const Rgba accent = rgba(255, 138, 48);   // phosphorus orange
 const Rgba good   = rgba(96, 206, 126);
 const Rgba bad    = rgba(240, 86, 76);
 const Rgba warn   = rgba(238, 194, 76);
@@ -740,7 +740,7 @@ struct StudioGame final : Game {
         const int cx = r.x + std::max(12, (r.w - 460) / 2);
         int y = r.y + std::max(12, (r.h - 300) / 4);
         tg.image(twk::Rect{ cx, y, 24, 24 }, flame_tex, 0, 0, 12, 12);
-        tg.text(cx + 32, y + 4, "Phoenix Studio", pal::accent, twk::kSubText, r.w, 2);
+        tg.text(cx + 32, y + 4, "Phosphorus Studio", pal::accent, twk::kSubText, r.w, 2);
         y += 32;
         tg.text(cx, y, "Open a game project to start. A project is a folder with a phxproject.json:", pal::dim, twk::kSubText, r.w - 20);
         tg.text(cx, y + 10, "the Studio edits that folder only (the engine's public API is readable).", pal::dim, twk::kSubText, r.w - 20);
@@ -769,7 +769,7 @@ struct StudioGame final : Game {
         };
         list("RECENT PROJECTS", recent_projects);
         if (has_project) return;
-        list("EXAMPLE PROJECTS (in this Phoenix checkout)", discover_projects(root));
+        list("EXAMPLE PROJECTS (in this Phosphorus checkout)", discover_projects(root));
         tg.text(cx, std::min(y + 4, r.bottom() - 14), "Working on the engine itself? Start the Studio with --engine-dev.", pal::faint, twk::kSubText, r.w - 20);
     }
 
@@ -971,7 +971,7 @@ struct StudioGame final : Game {
             g.text_field(nid, twk::Rect{ body.x + 70, body.y, body.w - 70, 13 }, st->name, "My Game");
             g.text(body.x, body.y + 20, "location", pal::dim);
             g.text_field(g.id("np-where"), twk::Rect{ body.x + 70, body.y + 17, body.w - 70, 13 }, st->where, "examples",
-                         0, "The parent folder: relative to the Phoenix checkout, or an absolute path");
+                         0, "The parent folder: relative to the Phosphorus checkout, or an absolute path");
             const std::string slug = project_slug(st->name);
             const std::string parent = st->where.empty() ? root : (is_abs_path(st->where) ? st->where : join_path(root, st->where));
             const std::string dir = join_path(parent, slug);
@@ -1452,7 +1452,7 @@ struct StudioGame final : Game {
         if (!ws.any_dirty()) { quitting = true; return; }
         if (!modals.empty()) return;
         const int n = ws.dirty_count();
-        push_modal("Quit Phoenix Studio", 330, 80, [this, n](twk::Gui& g, twk::Rect body) {
+        push_modal("Quit Phosphorus Studio", 330, 80, [this, n](twk::Gui& g, twk::Rect body) {
             g.text(body.x, body.y + 2, twk::fmt("%d file%s ha%s unsaved changes.", n, n == 1 ? "" : "s", n == 1 ? "s" : "ve"), pal::text);
             g.text(body.x, body.y + 14, "Save them before quitting?", pal::dim);
             const int y = body.bottom() - 14;
@@ -1471,7 +1471,7 @@ struct StudioGame final : Game {
         if (quitting) app.request_quit();
     }
     void update_title() {
-        std::string t = engine_dev ? "Phoenix Studio (engine development)" : has_project ? project.name + " - Phoenix Studio" : "Phoenix Studio";
+        std::string t = engine_dev ? "Phosphorus Studio (engine development)" : has_project ? project.name + " - Phosphorus Studio" : "Phosphorus Studio";
         if (tab == Tab::Editor && (engine_dev || has_project))
             if (DocView* d = ws.current()) t = base_name(d->path) + (d->dirty() ? " *" : "") + " - " + t;
         if (t != title_shown) { phx_desktop_set_title(t.c_str()); title_shown = t; }
@@ -1508,9 +1508,9 @@ struct StudioGame final : Game {
         });
     }
     void show_about() {
-        push_modal("About Phoenix Studio", 330, 110, [this](twk::Gui& g, twk::Rect body) {
+        push_modal("About Phosphorus Studio", 330, 110, [this](twk::Gui& g, twk::Rect body) {
             g.image(twk::Rect{ body.x, body.y, 24, 24 }, flame_tex, 0, 0, 12, 12);
-            g.text(body.x + 32, body.y + 2, "Phoenix Studio", pal::accent, twk::kSubText, body.w, 2);
+            g.text(body.x + 32, body.y + 2, "Phosphorus Studio", pal::accent, twk::kSubText, body.w, 2);
             g.text(body.x + 32, body.y + 16, "engine v" PHX_VERSION_STRING, pal::dim);
             g.text(body.x, body.y + 32, "One editor for one engine that runs on GBA, PSP, Windows", pal::text, twk::kSubText, body.w);
             g.text(body.x, body.y + 42, "and Linux - drawn by the engine's own software renderer.", pal::text, twk::kSubText, body.w);
@@ -1662,7 +1662,7 @@ struct StudioGame final : Game {
         tg.rect(twk::Rect{ 0, 0, kW, kTopH }, pal::bar, twk::kSubFill);
         tg.rect(twk::Rect{ 0, kTopH - 1, kW, 1 }, pal::line, twk::kSubWidget);
         tg.image(twk::Rect{ 4, 3, 12, 12 }, flame_tex, 0, 0, 12, 12);
-        tg.tip(twk::Rect{ 2, 0, 16, kTopH }, "Phoenix Studio v" PHX_VERSION_STRING);
+        tg.tip(twk::Rect{ 2, 0, 16, kTopH }, "Phosphorus Studio v" PHX_VERSION_STRING);
         // ---- menus ----
         int x = 20;
         auto menu_at = [&](const char* label, uint32_t id) {
@@ -3219,9 +3219,9 @@ void usage() {
                 "  --project DIR  open a game project (a folder with a phxproject.json). The Studio then\n"
                 "                 edits ONLY that folder; the engine's public API headers are read-only and\n"
                 "                 nothing else of the engine can be opened. Without it: a project picker.\n"
-                "  --engine-dev   work on the Phoenix engine itself: the whole checkout, the module graph,\n"
+                "  --engine-dev   work on the Phosphorus engine itself: the whole checkout, the module graph,\n"
                 "                 every gate and suite (the Studio's engine-maintenance mode)\n"
-                "  --root    the Phoenix repository (default: found from the current directory)\n"
+                "  --root    the Phosphorus repository (default: found from the current directory)\n"
                 "  --scale   integer UI scale (default 2: the 640x360 canvas opens as 1280x720)\n"
                 "  --tab     the view to open first (default: editor)\n"
                 "  --open    open a file in the Editor (repeatable; relative to the project)\n"
@@ -3270,7 +3270,7 @@ int main(int argc, char** argv) {
     }
     game.root = find_repo_root(root_arg.empty() ? "." : root_arg);
     if (game.root.empty()) {
-        std::fprintf(stderr, "phxstudio: not inside the Phoenix repository (no Makefile + engine/ + "
+        std::fprintf(stderr, "phxstudio: not inside the Phosphorus repository (no Makefile + engine/ + "
                              "tools/common/depcheck.py above '%s'); pass --root DIR\n",
                      root_arg.empty() ? "." : root_arg.c_str());
         return 1;
@@ -3279,7 +3279,7 @@ int main(int argc, char** argv) {
     phx_desktop_set_scale(scale);
     if (!game.script.empty() || !game.shot_path.empty()) { game.fresh = true; game.auto_size = false; }   // reproducible runs
     Config cfg = Config::from_defaults();
-    cfg.title = "Phoenix Studio";
+    cfg.title = "Phosphorus Studio";
     cfg.width = kW; cfg.height = kH;
     cfg.sim_hz = 60; cfg.vsync = true;
     App app(cfg);

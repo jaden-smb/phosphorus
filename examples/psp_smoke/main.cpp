@@ -1,4 +1,4 @@
-// examples/psp_smoke/main.cpp — the Phoenix engine running on PlayStation Portable hardware.
+// examples/psp_smoke/main.cpp — the Phosphorus engine running on PlayStation Portable hardware.
 // Same portable Renderer + software rasterizer as the host and GBA builds; only the platform
 // backend differs. Draws a checkerboard with a d-pad-movable sprite, VBlank-synced. Proves the
 // one C++17 codebase reaches a third architecture (MIPS Allegrec). Built by `make psp`.

@@ -1,7 +1,7 @@
 // tools/phxpack/font.h — HOST-ONLY font model: a `.font` grid sheet (proportional widths measured
 // from its pixels) or an imported BMFont text `.fnt`, turned into the glyph table of a Font asset
 // (phx/resource/bundle.h FontBlobHeader + FontGlyphDef; phx/runtime/font.h loads it for phx::UI).
-// builders.h build_font bakes it; Phoenix Studio's font editor edits `.font` files with the same
+// builders.h build_font bakes it; Phosphorus Studio's font editor edits `.font` files with the same
 // code, so its preview measures exactly what the bake will.
 #ifndef PHX_TOOLS_FONT_H
 #define PHX_TOOLS_FONT_H

@@ -1,4 +1,4 @@
-# Phoenix Engine — Resources & Asset Format
+# Phosphorus Engine — Resources & Asset Format
 
 > `engine/resource/` (runtime) + the pack format produced by `tools/` (offline).
 > Principle: **assets are baked offline, resident as one stable in-memory image, read
@@ -203,7 +203,7 @@ tool version (`kPhxpackToolVersion`) or `kBundleVersion` invalidates every lock.
 | Approach          | Runtime cost            | RAM            | GBA viable | Determinism |
 |-------------------|-------------------------|----------------|------------|-------------|
 | Parse PNG/JSON at runtime | decode + allocate | high, transient | no (no libpng/heap) | no |
-| **Baked + in-place (Phoenix)** | pointer cast | the bundle image only, no transient parse allocations (free on GBA — it's ROM) | yes (ROM ptr) | yes |
+| **Baked + in-place (Phosphorus)** | pointer cast | the bundle image only, no transient parse allocations (free on GBA — it's ROM) | yes (ROM ptr) | yes |
 
 Baking moves all parsing/validation to the developer's machine where errors are
 caught early and where we can afford slow, thorough optimization. The console does the

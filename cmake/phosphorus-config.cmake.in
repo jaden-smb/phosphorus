@@ -1,0 +1,7 @@
+# phosphorus-config.cmake — find_package(phosphorus CONFIG) entry point for an installed SDK.
+# Imports the engine's static module libraries as phosphorus::phx_<module> (link phx_runtime for
+# the whole App stack; the imported targets carry their inter-module dependencies).
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/phosphorus-targets.cmake")
+check_required_components(phosphorus)

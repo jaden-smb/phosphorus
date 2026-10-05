@@ -1,5 +1,5 @@
 // tools/common/twk.h — the TOOL WIDGET KIT: a pointer + keyboard immediate-mode GUI for the
-// engine-native editors (Phoenix Studio, phxtmap, phxentity), drawn ONLY with phx::UI's
+// engine-native editors (Phosphorus Studio, phxtmap, phxentity), drawn ONLY with phx::UI's
 // rect/image primitives through the engine's own software golden renderer
 // (docs/gui-editor-feasibility.md, Phase 2). It lives in tools/, never in engine/ui: the in-game
 // UI stays console-sized (focus ring, no pointer, no text entry), exactly as the guardrails ask.
@@ -220,7 +220,7 @@ struct Theme {
     Rgba text   = rgba(230, 230, 240);
     Rgba dim    = rgba(146, 148, 172);
     Rgba faint  = rgba(96, 98, 124);
-    Rgba accent = rgba(255, 138, 48);    // phoenix orange
+    Rgba accent = rgba(255, 138, 48);    // phosphorus orange
     Rgba good   = rgba(96, 206, 126);
     Rgba bad    = rgba(240, 86, 76);
     Rgba warn   = rgba(238, 194, 76);

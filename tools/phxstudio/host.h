@@ -3,7 +3,7 @@
 // Each editor (code, sprite/pixel, map, table) is a DocView: it owns one document, draws itself
 // into a rect with the tool widget kit (tools/common/twk.h), and asks its Host for everything
 // outside that rect — status toasts, modal dialogs, opening another file, the prefab vocabulary,
-// the animation clock. Phoenix Studio is one Host (tabs, explorer, menus); the standalone
+// the animation clock. Phosphorus Studio is one Host (tabs, explorer, menus); the standalone
 // phxtmap / phxentity windows are another (one document, a slim toolbar) — the SAME panels in
 // both, so there is exactly one map editor and one table editor in the tree.
 //

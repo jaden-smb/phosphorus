@@ -1,6 +1,6 @@
 <div align="center">
 
-# Phoenix Engine (`phx`)
+# Phosphorus Engine (`phx`)
 
 **A lightweight, modular, retro-inspired 2D/2.5D game engine.**
 One codebase → **Game Boy Advance · PSP · Windows · Linux**.
@@ -15,7 +15,7 @@ readable code over feature count.*
 
 ## What it is
 
-Phoenix runs the **same gameplay code** on a 256 KB Game Boy Advance and a multi-gigabyte PC by
+Phosphorus runs the **same gameplay code** on a 256 KB Game Boy Advance and a multi-gigabyte PC by
 designing around the ~17,000× RAM gap instead of ignoring it. Gameplay code never includes a
 platform header; everything machine-specific lives behind one C-ABI seam and a per-target
 render backend.
@@ -73,7 +73,7 @@ make sanitize             # the full suite under ASan + UBSan
 Expected: `PASS 120336 checks across 101 cases`, a `... PASS` line per suite, and `depcheck: OK`.
 
 With SDL2 (and libGL) you also get windowed play and the desktop verifiers — `make sdl`, `make
-gl`, `make sdl-verify`, `make gl-verify`, `make audio-verify` — plus **Phoenix Studio**, `make
+gl`, `make sdl-verify`, `make gl-verify`, `make audio-verify` — plus **Phosphorus Studio**, `make
 studio && ./build/phxstudio`: the editor for the engine, built on the engine. It has a code editor, a
 sprite/pixel editor (GBA colour checks, frames, animated clips), a tilemap editor (real tileset art,
 collision, spawns, parallax) and a data-table editor. It also shows the module graph and capability
@@ -126,7 +126,7 @@ The engine is an **acyclic, strictly-layered** dependency graph, enforced at bui
 ## Repository layout
 
 ```
-phoenix/
+phosphorus/
 ├── docs/       ← the technical design documentation (start at 00)
 ├── engine/     ← the engine modules (core, memory, platform, render, ecs, ...)
 ├── tools/      ← host-only asset pipeline + GUI editors (instructions.md in each)
@@ -166,7 +166,7 @@ tracker music, particles, a job system, scripting, DS/Vita/Android — is in the
 
 Releases are tagged `vX.Y.Z` and ship prebuilt artifacts on the
 [releases page](https://github.com/jaden-smb/phoenix/releases): the asset-pipeline CLIs for
-Linux/Windows, a CMake SDK (`find_package(phoenix)`), and ready-to-run GBA ROMs + PSP EBOOTs.
+Linux/Windows, a CMake SDK (`find_package(phosphorus)`), and ready-to-run GBA ROMs + PSP EBOOTs.
 The same bundles build locally via `make dist` / `dist-win` / `dist-gba` / `dist-psp`. The
 version is single-sourced from [`phx/core/version.h`](engine/core/include/phx/core/version.h);
 history is in [CHANGELOG.md](CHANGELOG.md).

@@ -35,4 +35,4 @@ else()
   set(_render_backend "soft (tier 2, golden reference)")
 endif()
 
-message(STATUS "Phoenix render backend: ${_render_backend}")
+message(STATUS "Phosphorus render backend: ${_render_backend}")

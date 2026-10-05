@@ -1,3 +1,3 @@
-# sprite definition (phxsprite) - edited in Phoenix Studio
+# sprite definition (phxsprite) - edited in Phosphorus Studio
 sheet hero.png 16 16
 clip idle 0 4 8 1

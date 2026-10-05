@@ -2,7 +2,7 @@
 
 ## What it is for
 
-`phxpack` produces the **`.phxp` bundle** — the single packed asset file a Phoenix game mounts
+`phxpack` produces the **`.phxp` bundle** — the single packed asset file a Phosphorus game mounts
 at runtime (zero-copy on PC/PSP, linked into the ROM on GBA). It is the final stage of the
 two-stage pipeline (docs/08): the per-format converters (`phxsprite`/`phxtile`/`phxsnd`/
 `phxbin`) bake author sources into intermediate `.phx*` files, and `phxpack` **merges** those

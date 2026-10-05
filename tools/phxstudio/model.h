@@ -1,4 +1,4 @@
-// tools/phxstudio/model.h — Phoenix Studio's headless document model (docs/gui-editor-feasibility.md
+// tools/phxstudio/model.h — Phosphorus Studio's headless document model (docs/gui-editor-feasibility.md
 // §6). Everything the studio SHOWS is computed here as pure C++ over the real tree and the real
 // bundle format, with no window, renderer or process involved — so it is unit-tested in the
 // pipeline suite exactly like phxtmap's TmapDoc and phxentity's BinDoc. The GUI shell

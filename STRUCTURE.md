@@ -1,11 +1,11 @@
-# Phoenix Engine — Folder Structure (annotated)
+# Phosphorus Engine — Folder Structure (annotated)
 
 Every engine module follows the identical shape: a public `include/phx/<mod>/` (the
 only thing siblings may include) and a private `src/` with optional per-backend
 subfolders. The build links exactly one backend per module.
 
 ```
-phoenix/
+phosphorus/
 ├── README.md                     Engine identity + navigation
 ├── STRUCTURE.md                  (this file)
 ├── LICENSE                       MIT
@@ -99,7 +99,7 @@ phoenix/
 │   │                             window (solo.h). editor.h = the headlessly-tested .tmj document model
 │   ├── phxentity/                GUI data-table editor: the Studio's table panel (ed_table.cpp) standalone.
 │   │                             editor.h = the headlessly-tested phxbin JSON document model
-│   ├── phxstudio/                Phoenix Studio — THE editor: Explorer + tabs of documents in the CODE,
+│   ├── phxstudio/                Phosphorus Studio — THE editor: Explorer + tabs of documents in the CODE,
 │   │                             SPRITE/PIXEL, TILEMAP, DATA-TABLE, SOUND-EFFECT, SONG, FONT and DIALOGUE editors;
 │   │                             budget.h (the Budget + Profiler views' model) · settings.h (File >
 │   │                             Settings: scale, session, SDK/emulator paths -> launch env) ·

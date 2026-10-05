@@ -1,6 +1,6 @@
 // phx/runtime/flow.h — the GAME FLOW as data: which screens a game has and how they chain — a
 // title, the levels in order, a game over, an ending — plus the HUD and pause every level gets.
-// It is a phxbin table (assets/flow.json, edited in Phoenix Studio's table editor), one row per
+// It is a phxbin table (assets/flow.json, edited in Phosphorus Studio's table editor), one row per
 // screen, read by column name:
 //
 //   | column  | type  | meaning                                                               |

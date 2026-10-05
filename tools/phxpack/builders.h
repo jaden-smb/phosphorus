@@ -13,7 +13,7 @@
 #include "json.h"
 #include "synth.h"
 #include "font.h"
-#include "dialogue.h"      // .dlg -> a Dialogue asset (also Phoenix Studio's dialogue editor)          // .font / .fnt -> a glyph table (also Phoenix Studio's font editor)         // .sfx / .song -> PCM (the SFX generator and the tracker)
+#include "dialogue.h"      // .dlg -> a Dialogue asset (also Phosphorus Studio's dialogue editor)          // .font / .fnt -> a glyph table (also Phosphorus Studio's font editor)         // .sfx / .song -> PCM (the SFX generator and the tracker)
 #include "analyze.h"       // tools/phxviz — offline visualization-track analysis (build_viz)
 
 #include <cctype>
@@ -235,7 +235,7 @@ inline bool build_wav(BundleWriter& w, const std::string& in, const std::string&
 }
 
 // ---- synthesized audio: .sfx (sound-effect parameters) / .song (tracker) -> a Sound asset ----
-// Rendered at kSynthRate by synth.h (the same code Phoenix Studio auditions), then baked exactly like
+// Rendered at kSynthRate by synth.h (the same code Phosphorus Studio auditions), then baked exactly like
 // a WAV: add_sound() resamples it for tier 0.
 inline bool build_sfx(BundleWriter& w, const std::string& in, const std::string& name = "") {
     std::vector<uint8_t> bytes;

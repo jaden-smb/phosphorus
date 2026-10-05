@@ -1,4 +1,4 @@
-// tools/phxstudio/new_main.cpp — `phxnew DIR [NAME]`: Phoenix Studio's File > New project on the
+// tools/phxstudio/new_main.cpp — `phxnew DIR [NAME]`: Phosphorus Studio's File > New project on the
 // command line. Writes the same template (projectdoc.h: create_project): src/main.cpp, a hero
 // sprite, a tileset, a level and phxproject.json, ready for `make play PROJECT=DIR`. Headless;
 // `make project-check` and CI use it to build the template for every target.

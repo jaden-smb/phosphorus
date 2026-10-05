@@ -1,7 +1,7 @@
 // tools/phxstudio/solo.h — a ONE-document window around a Studio editor panel. phxtmap and
 // phxentity are this shell hosting the Studio's own map / table panels (ed_map.cpp,
 // ed_table.cpp), so there is exactly one map editor and one table editor in the tree: the same
-// widgets, keys and document models whether you open a file in Phoenix Studio or on its own.
+// widgets, keys and document models whether you open a file in Phosphorus Studio or on its own.
 //
 // The shell is a phx::Game on the usual App loop + SDL window: a slim bar (file name, Save, Undo,
 // Redo, the panel's actions, help), the panel, a status line, toasts, modal dialogs, and a
@@ -31,7 +31,7 @@ inline std::string abs_path(const std::string& p) {
     const pfs::path a = pfs::absolute(p, ec);
     return ec ? p : a.lexically_normal().generic_string();
 }
-// The Phoenix checkout that contains `start` (the directory with Makefile + engine/ + tools/),
+// The Phosphorus checkout that contains `start` (the directory with Makefile + engine/ + tools/),
 // or "" when there is none — pickers then list files under the working directory.
 inline std::string solo_repo_root(const std::string& start) {
     std::error_code ec;
@@ -131,7 +131,7 @@ public:
     // A one-document window can't open another document (the map editor's "Edit tile"): say where.
     void open_file(const std::string& path_abs, int line, int col) override {
         (void)line; (void)col;
-        toast("open " + base_name(path_abs) + " in Phoenix Studio to edit it", Toast::Info);
+        toast("open " + base_name(path_abs) + " in Phosphorus Studio to edit it", Toast::Info);
     }
     std::vector<std::string> prefab_types() override { return types; }
     std::vector<std::string> files_with(const std::vector<std::string>& exts) override {

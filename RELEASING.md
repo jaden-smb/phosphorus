@@ -1,8 +1,8 @@
-# Releasing Phoenix
+# Releasing Phosphorus
 
 ## Versioning policy
 
-Phoenix uses [semantic versioning](https://semver.org). Pre-1.0, the contract is:
+Phosphorus uses [semantic versioning](https://semver.org). Pre-1.0, the contract is:
 
 - **MINOR** (`0.X.0`) — may change engine API, asset (`.phxp`) formats, or savegame layouts.
 - **PATCH** (`0.x.Y`) — fixes and additions that break nothing existing.
@@ -20,14 +20,14 @@ attaches these to a GitHub release (build any of them locally with the same targ
 
 | Artifact | Built by | Contents |
 |---|---|---|
-| `phoenix-X.Y.Z-tools-linux-x86_64.tar.gz` | `make dist` | the five asset-pipeline CLIs (`phxpack`, `phxsprite`, `phxtile`, `phxsnd`, `phxbin`) |
-| `phoenix-X.Y.Z-sdk-linux-x86_64.tar.gz` | `cpack` (CMake tree) | headers + static libs + tools + `find_package(phoenix)` config |
-| `phoenix-X.Y.Z-tools-windows-x86_64.zip` | `make dist-win` | the same CLIs as static PE32+ `.exe` |
-| `phoenix-X.Y.Z-gba.zip` | `make dist-gba` | the shipping PPU ROMs: platformer + Emberwing (size-gated) |
-| `phoenix-X.Y.Z-psp.zip` | `make dist-psp` | `platformer/EBOOT.PBP` + `emberwing/EBOOT.PBP`, ready for `ms0:/PSP/GAME/` or PPSSPP |
+| `phosphorus-X.Y.Z-tools-linux-x86_64.tar.gz` | `make dist` | the five asset-pipeline CLIs (`phxpack`, `phxsprite`, `phxtile`, `phxsnd`, `phxbin`) |
+| `phosphorus-X.Y.Z-sdk-linux-x86_64.tar.gz` | `cpack` (CMake tree) | headers + static libs + tools + `find_package(phosphorus)` config |
+| `phosphorus-X.Y.Z-tools-windows-x86_64.zip` | `make dist-win` | the same CLIs as static PE32+ `.exe` |
+| `phosphorus-X.Y.Z-gba.zip` | `make dist-gba` | the shipping PPU ROMs: platformer + Emberwing (size-gated) |
+| `phosphorus-X.Y.Z-psp.zip` | `make dist-psp` | `platformer/EBOOT.PBP` + `emberwing/EBOOT.PBP`, ready for `ms0:/PSP/GAME/` or PPSSPP |
 
 The SDK installs anywhere via `cmake --install build/<dir> --prefix <where>`; downstream
-projects then use `find_package(phoenix CONFIG)` and link `phoenix::phx_<module>`.
+projects then use `find_package(phosphorus CONFIG)` and link `phosphorus::phx_<module>`.
 
 ## Release checklist
 
@@ -44,7 +44,7 @@ projects then use `find_package(phoenix CONFIG)` and link `phoenix::phx_<module>
    tag that doesn't match the header):
    ```bash
    git commit -am "release: vX.Y.Z"
-   git tag -a vX.Y.Z -m "Phoenix X.Y.Z"
+   git tag -a vX.Y.Z -m "Phosphorus X.Y.Z"
    git push origin main vX.Y.Z
    ```
 6. **Watch the Release workflow** (Actions → Release). It re-verifies tag↔header, re-runs

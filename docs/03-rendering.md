@@ -1,4 +1,4 @@
-# Phoenix Engine — Rendering
+# Phosphorus Engine — Rendering
 
 > `engine/render/` — one public API, four backends: GBA PPU, PSP GU, PC GL, and a
 > software rasterizer (the golden reference every other backend is diffed against; see
@@ -120,7 +120,7 @@ issues a handful of draw calls.
 The PPU is the engine here. Notes that shape the design:
 
 - **Video modes:** Mode 0 (4 text BGs, tiled) is the workhorse for 2D; Mode 4
-  (bitmap, paletted) available for effects/intros. Phoenix defaults to Mode 0.
+  (bitmap, paletted) available for effects/intros. Phosphorus defaults to Mode 0.
 - **Tiles:** 8×8, 4bpp (16 colors/palette) → 32 bytes/tile. Tilemaps reference tile
   indices; `upload_tilemap` writes the screen-base map and char-base tiles to VRAM.
 - **Scroll is free:** `set_tilemap_scroll` is two register writes — parallax via 4 BG
@@ -188,6 +188,6 @@ catches "the GBA flips Y but GL doesn't" classes of bugs that otherwise ship.
 
 A full RHI assumes a programmable pipeline. The GBA has none. Forcing the PPU into an
 RHI abstraction would either (a) cripple the PC backend to PPU semantics, or (b) make
-the GBA backend a lie. Phoenix instead abstracts at the **2D-intent layer** (sprites,
+the GBA backend a lie. Phosphorus instead abstracts at the **2D-intent layer** (sprites,
 tilemaps, parallax, palettes) — the highest level that is *honestly* common to all
 four machines. That is the single most important rendering decision in the engine.

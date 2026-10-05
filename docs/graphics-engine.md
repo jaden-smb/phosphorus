@@ -1,4 +1,4 @@
-# Phoenix Graphics Engine — The Complete Guide
+# Phosphorus Graphics Engine — The Complete Guide
 
 > `engine/render/` — one 2D-intent API, four interchangeable backends, one golden reference.
 > This is the practical companion to [docs/03-rendering.md](03-rendering.md) (the original

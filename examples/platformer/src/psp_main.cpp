@@ -10,7 +10,7 @@
 #include <pspkernel.h>
 #include <stdlib.h>
 
-PSP_MODULE_INFO("PhoenixPlatformer", 0, 1, 1);
+PSP_MODULE_INFO("PhosphorusPlatformer", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 // Claim a real heap: the App's root arena (cfg.total_ram) is malloc'd from it. The PSP user
 // partition is ~24 MB; 16 MB is ample for the game's 4 MB arena + the framebuffer + libc.
@@ -49,7 +49,7 @@ int main() {
 
     Config cfg = Config::from_defaults();          // budgets seeded from phx::caps() (PC tier)
     cfg.sim_hz = 60;
-    cfg.title  = "Phoenix Platformer";
+    cfg.title  = "Phosphorus Platformer";
     cfg.width  = 240; cfg.height = 136;            // half-PSP; the backend 2x-scales to 480x272
     cfg.total_ram     = 4u << 20;                  // engine arena (framebuffer is allocated apart)
     cfg.frame_scratch = 64u << 10;

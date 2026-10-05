@@ -1,4 +1,4 @@
-// examples/gba_smoke/main.cpp — the first program that runs the Phoenix engine on REAL Game Boy
+// examples/gba_smoke/main.cpp — the first program that runs the Phosphorus engine on REAL Game Boy
 // Advance hardware. It boots the GBA platform backend (Mode 3), builds a tileset + sprite in the
 // same portable Renderer the host uses, and renders a checkerboard with a d-pad-movable sprite,
 // VBlank-synced. Proves the portable C++17 engine (math/fixed-point, memory, render front end,

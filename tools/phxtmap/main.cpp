@@ -1,4 +1,4 @@
-// tools/phxtmap/main.cpp — the standalone TILEMAP editor: Phoenix Studio's map panel
+// tools/phxtmap/main.cpp — the standalone TILEMAP editor: Phosphorus Studio's map panel
 // (tools/phxstudio/ed_map.cpp) in a window of its own. It edits the open Tiled `.tmj` author
 // format (never engine blobs — phxtile/phxpack bake what it saves, docs/08 §1) and dogfoods the
 // engine: the same App loop, SDL window, software renderer and widget kit as the Studio and the

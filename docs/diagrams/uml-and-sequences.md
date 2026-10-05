@@ -1,4 +1,4 @@
-# Phoenix Engine — UML & Sequence Diagrams
+# Phosphorus Engine — UML & Sequence Diagrams
 
 ASCII UML (class/module/sequence) referenced by the module docs. Kept in one place so
 the relationships are auditable at a glance.

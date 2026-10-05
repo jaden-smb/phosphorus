@@ -2,7 +2,7 @@
 """export_model.py — bake a llama2-family checkpoint into a `.phxllm` blob for examples/tinyllm.
 
 This script is the HOST half of the tinyllm example. It does every expensive, fallible thing
-offline (Phoenix's pipeline philosophy, docs/08): quantization, the RoPE table, the exp/SiLU
+offline (Phosphorus's pipeline philosophy, docs/08): quantization, the RoPE table, the exp/SiLU
 lookup tables, the tokenizer index — so the Game Boy Advance only ever streams int8 out of
 cartridge ROM.
 

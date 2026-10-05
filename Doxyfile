@@ -9,7 +9,7 @@
 # default PC/float view (PHX_TARGET_GBA / PHX_GBA_HW evaluate to 0), matching the default
 # host build.
 
-PROJECT_NAME           = "Phoenix Engine"
+PROJECT_NAME           = "Phosphorus Engine"
 PROJECT_BRIEF          = "phx — one C++17 codebase for GBA, PSP, Windows, and Linux"
 
 OUTPUT_DIRECTORY       = build/docs

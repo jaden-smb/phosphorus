@@ -1,4 +1,4 @@
-# Phoenix Engine — Build System
+# Phosphorus Engine — Build System
 
 > One CMake tree → four runtime binaries + host tools. The build system is itself a
 > portability mechanism: a new platform is *a toolchain file + a backend folder*, with

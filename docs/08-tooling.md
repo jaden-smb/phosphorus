@@ -1,4 +1,4 @@
-# Phoenix Engine — Tooling & Asset Pipeline
+# Phosphorus Engine — Tooling & Asset Pipeline
 
 > `tools/` — host-only C++17 (STL freely allowed here; these never ship to console).
 > They turn author-friendly formats into the baked `.phxp` blobs the runtime reads in place.
@@ -15,7 +15,7 @@
 | `phxpack`   | the above `+` → `assets.phxp`          | bundle assembler (sorted TOC, optional LZ77; see §2 for what's actually per-target) |
 | `phxtmap`   | GUI tilemap editor → `.tmj`            | authoring (wraps Tiled-compatible fmt); the Studio's map panel standalone |
 | `phxentity` | GUI data-table editor → `.json`        | record/prefab authoring; the Studio's table panel standalone |
-| `phxstudio` | Phoenix Studio (the editor)            | code, sprite/pixel, tilemap and table editors + module graph, per-tier asset previews, one-click games/gates/suites (§10) |
+| `phxstudio` | Phosphorus Studio (the editor)            | code, sprite/pixel, tilemap and table editors + module graph, per-tier asset previews, one-click games/gates/suites (§10) |
 
 (No tool accepts XML/`.tmx` input today, despite some of the design language below — Tiled
 maps are `.tmj`/JSON only. ADPCM/8-bit-at-bake for `phxsnd` is target design, not built either
@@ -64,7 +64,7 @@ plus a Font asset: the glyph table in `phx/resource/bundle.h`, read in place by
 - A `.font` is JSON over a grid sheet. It sets the cell size and the first character, plus
   `proportional` / `spacing` / `space` or a fixed `advance`, and `line_h`. Proportional widths
   are measured from each glyph's opaque columns at bake (`tools/phxpack/font.h`, shared with
-  Phoenix Studio's font editor).
+  Phosphorus Studio's font editor).
 - A `.fnt` is BMFont's text export (BMFont, Hiero, Littera...): each character's rect, offset
   and advance, from one page.
 - TrueType is not rasterized: export a pixel font to `.fnt` (or draw one in the Studio) first.
@@ -161,7 +161,7 @@ parameter set) and a **song** (`.song`: a small pattern tracker with instruments
 order list). `tools/phxpack/synth.h` renders them to PCM at 22050 Hz, and they then take exactly
 the WAV path: the same Sound asset and the same tier-0 resample. Nothing is synthesized at
 runtime. A song is one rendered loop, which the music bus loops, as Emberwing's baked theme does.
-The renders are deterministic (an LFSR for noise, seeded presets). Phoenix Studio's sound effect
+The renders are deterministic (an LFSR for noise, seeded presets). Phosphorus Studio's sound effect
 and song editors play the exact PCM the bake produces.
 
 ## 6. `phxbin` — JSON → binary tables
@@ -190,7 +190,7 @@ and the bake.
 
 A desktop tool built **on the engine itself**: the same App loop, SDL window and software renderer
 the games use, with the tool widget kit (`tools/common/twk.h`) on top. That is dogfooding, with no
-external UI toolkit. It is **Phoenix Studio's map editor** (§10) in a window of its own: one panel
+external UI toolkit. It is **Phosphorus Studio's map editor** (§10) in a window of its own: one panel
 (`tools/phxstudio/ed_map.cpp`), two hosts. The document model (`tools/phxtmap/editor.h`) is
 unit-tested headlessly. Usage and controls: `tools/phxtmap/instructions.md`.
 
@@ -224,7 +224,7 @@ aren't locked into our editor.
 
 ## 8. `phxentity` — Entity / Prefab Editor (GUI)
 
-**Phoenix Studio's data-table editor** (§10, `tools/phxstudio/ed_table.cpp`) in a window of its
+**Phosphorus Studio's data-table editor** (§10, `tools/phxstudio/ed_table.cpp`) in a window of its
 own. It is a spreadsheet over the phxbin author JSON (typed record tables).
 
 - **Built today:**
@@ -271,7 +271,7 @@ own. It is a spreadsheet over the phxbin author JSON (typed record tables).
   `<out>.lock`'s recorded output CRC32 lets CI flag a stale/hand-edited bundle; and
   `--upgrade` re-bakes a bundle from its own recorded source list. `--full` opts out.
 
-## 10. `phxstudio` — Phoenix Studio
+## 10. `phxstudio` — Phosphorus Studio
 
 The one editor for the engine, built on the engine like everything else here (the feasibility
 study's Option A, `docs/gui-editor-feasibility.md`). One window, four views:

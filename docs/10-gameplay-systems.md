@@ -1,4 +1,4 @@
-# Phoenix Engine — Gameplay Systems
+# Phosphorus Engine — Gameplay Systems
 
 > Input · Audio · Scene · Physics · Animation · UI. These sit above ECS/render/resource
 > and below the game. Each is small, decoupled, and meets the others only through ECS
@@ -112,7 +112,7 @@ The device's callback drains the queue into the mixer and mixes, so the mixer is
 touched there. With no device (the null platform) the App mixes one frame's worth per rendered
 frame itself: voices advance deterministically, and `peak()`, `plays()` and `frames_mixed()` let
 tests check what would have been heard. A game that never plays anything pays nothing. A game
-that runs its own mixer and device (Emberwing, Phoenix Studio) is unaffected, because
+that runs its own mixer and device (Emberwing, Phosphorus Studio) is unaffected, because
 `GameAudio` never starts. `make game-audio-verify` checks the device path on a real SDL device.
 
 | Feature           | GBA                          | PSP                  | PC                |
@@ -325,7 +325,7 @@ Supported surfaces:
   - The state is integer, so the same conversation reveals the same character on the same tick
     on every tier.
   - The flow plays conversations on "talk" screens (cutscenes) and when the player presses Up at
-    a `Talk` component. Phoenix Studio's dialogue editor plays them the same way; the dialogue
+    a `Talk` component. Phosphorus Studio's dialogue editor plays them the same way; the dialogue
     suite checks its simulator against the runner.
 
 GBA constraints baked in: glyphs are 8×8 tiles drawn as BG/OBJ; the UI batches into the

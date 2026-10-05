@@ -30,4 +30,4 @@ else()
   set(_platform_backend "null (headless)")
 endif()
 
-message(STATUS "Phoenix platform backend: ${_platform_backend}")
+message(STATUS "Phosphorus platform backend: ${_platform_backend}")

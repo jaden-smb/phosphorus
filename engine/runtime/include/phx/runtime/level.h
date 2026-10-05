@@ -1,4 +1,4 @@
-// phx/runtime/level.h — a level as authored in Phoenix Studio, running: the tilemap (drawn, with
+// phx/runtime/level.h — a level as authored in Phosphorus Studio, running: the tilemap (drawn, with
 // its parallax), its collision (the physics grid from the LAST tile layer, with the per-tile
 // flags) and its spawns turned into entities, each one built from the PREFAB TABLE row whose
 // `type` column names it. What a game used to write by hand, per game (examples/platformer's

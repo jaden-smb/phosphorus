@@ -6,7 +6,7 @@
 //   * the developer tools (phx/runtime/devtools.h): F1 overlay + inspector, F5 pause, F6 step;
 //   * PHX_PLAY_FROM="x,y": start the player there instead of at its spawn (the map editor's
 //     "Play from here"; phx/runtime/behaviours.h: set_start_override);
-//   * PHX_DUMP_COMPONENTS=file: write the game's reflected components as JSON (for Phoenix
+//   * PHX_DUMP_COMPONENTS=file: write the game's reflected components as JSON (for Phosphorus
 //     Studio; `make game` does it after linking) and exit without booting a window;
 //   * an exported game (`make game-export`: the executable next to build/<name>.phxp) runs from its
 //     own folder whatever the working directory (phx_desktop_use_exe_dir).

@@ -15,4 +15,4 @@ else() # linux (default)
   set(PHX_RENDER_TIER 2 CACHE INTERNAL "programmable GL/VK")
 endif()
 
-message(STATUS "Phoenix render tier: ${PHX_RENDER_TIER}")
+message(STATUS "Phosphorus render tier: ${PHX_RENDER_TIER}")

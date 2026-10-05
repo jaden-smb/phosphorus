@@ -1,12 +1,12 @@
 # `tests/` — the architecture's safety net
 
-Phoenix has no GoogleTest and no test framework dependency. Tests use the ~90-line in-house
+Phosphorus has no GoogleTest and no test framework dependency. Tests use the ~90-line in-house
 harness in [`phx_test.h`](phx_test.h), in the same spirit as the engine: no allocation surprises,
 no magic, readable in one sitting.
 
 Everything here runs **headlessly** on the `null` platform (virtual clock, software framebuffer,
 scripted input — including the desktop extension's scripted key/mouse/text queue that the
-`editors` suite drives Phoenix Studio's widget kit with), so the whole suite is deterministic and
+`editors` suite drives Phosphorus Studio's widget kit with), so the whole suite is deterministic and
 needs no display.
 
 ## Layout

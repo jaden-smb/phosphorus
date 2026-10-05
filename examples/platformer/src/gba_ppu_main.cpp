@@ -26,7 +26,7 @@ int main() {
 
     Config cfg = Config::from_defaults();
     cfg.sim_hz = 60;
-    cfg.title  = "Phoenix Platformer (PPU)";
+    cfg.title  = "Phosphorus Platformer (PPU)";
     cfg.width  = 240; cfg.height = 160;            // native PPU resolution (no 2x upscale)
     cfg.total_ram     = 160u << 10;
     cfg.frame_scratch = 4u  << 10;

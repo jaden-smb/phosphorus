@@ -36,7 +36,7 @@ struct DevState {
     // the frame-time history (µs), newest at ring_at - 1
     uint32_t    frame_us[kRing]{}, update_us[kRing]{}, render_us[kRing]{};
     uint32_t    ring_at = 0, ring_n = 0;
-    // PHX_TRACE=file: a per-frame timing trace (Phoenix Studio's profiler reads it)
+    // PHX_TRACE=file: a per-frame timing trace (Phosphorus Studio's profiler reads it)
     const char* trace_path = nullptr;
     FILE*       trace = nullptr;
 };

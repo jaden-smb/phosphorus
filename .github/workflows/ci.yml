@@ -25,7 +25,7 @@ jobs:
       - name: Determinism gate — identical outcomes + frame across scalar tiers
         run: make determinism
 
-  # Phoenix Studio through CMake: the editor, the standalone editors and phxnew configure and
+  # Phosphorus Studio through CMake: the editor, the standalone editors and phxnew configure and
   # build against the engine's CMake modules with the SDL2 platform backend (no display needed
   # to link them). The Makefile's `make studio` is the day-to-day path; this keeps CMake honest.
   cmake-studio:
@@ -104,7 +104,7 @@ jobs:
         run: make size-gate
       - name: Build Emberwing PPU ROM + enforce size gate
         run: make size-gate-emberwing
-      # A game project exactly as Phoenix Studio creates one, through the generic project rules
+      # A game project exactly as Phosphorus Studio creates one, through the generic project rules
       # and the engine's GBA entry (no hand-written main) — size-gated like the shipping ROMs.
       - name: Build a new Studio project as a GBA ROM
         run: |
@@ -140,7 +140,7 @@ jobs:
         run: make psp-platformer
       - name: Build PSP Emberwing EBOOT
         run: make psp-emberwing
-      # A game project exactly as Phoenix Studio creates one, through the engine's PSP entry.
+      # A game project exactly as Phosphorus Studio creates one, through the engine's PSP entry.
       - name: Build a new Studio project as a PSP EBOOT
         run: |
           make phxnew

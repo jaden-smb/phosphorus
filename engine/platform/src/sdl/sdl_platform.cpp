@@ -151,7 +151,7 @@ int sdl_init(const phx_platform_desc* desc) {
         std::fprintf(stderr, "[phx.sdl] SDL_Init failed: %s\n", SDL_GetError());
         return 1;
     }
-    const char* title = desc->title ? desc->title : "Phoenix";
+    const char* title = desc->title ? desc->title : "Phosphorus Engine";
 
 #if defined(PHX_HAVE_GL)
     // GL render tier: an OpenGL context + double buffering. The GL backend draws; we swap.

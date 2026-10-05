@@ -13,7 +13,7 @@
  *   - gba / psp                          : nothing. No console backend links a tool, so no
  *                                         game ROM changes by a single byte.
  *
- * No SDL type leaks through this header; key codes are Phoenix's own (printable keys are
+ * No SDL type leaks through this header; key codes are Phosphorus's own (printable keys are
  * their lower-case ASCII code, so shortcuts are layout-aware: Ctrl+Z is the key LABELLED Z).
  * Gameplay code must never include this — it is for host tools (tools/) only. */
 #ifndef PHX_PLATFORM_DESKTOP_H
@@ -112,7 +112,7 @@ int  phx_desktop_fb_size(int* w, int* h);
 
 /* Native-resolution overlay: an RGBA8 layer with ONE PIXEL PER WINDOW PIXEL over the framebuffer
  * area (framebuffer size x the integer UI scale), alpha-blended over the upscaled framebuffer at
- * present(). It lets a tool draw smooth, anti-aliased text (Phoenix Studio's TrueType text) on top
+ * present(). It lets a tool draw smooth, anti-aliased text (Phosphorus Studio's TrueType text) on top
  * of a canvas that is otherwise nearest-neighbour upscaled and alpha-tested. Pixels are straight
  * (non-premultiplied) alpha, R | G<<8 | B<<16 | A<<24 like phx::Rgba.
  *

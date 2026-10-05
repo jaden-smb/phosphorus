@@ -1,4 +1,4 @@
-# Phoenix Engine — Entity Component System
+# Phosphorus Engine — Entity Component System
 
 > `engine/ecs/` — data-oriented game state. Tuned so the *same* ECS scales from 512
 > entities in 256 KB (GBA) to 65,536 entities on PC, with no per-entity heap churn.
@@ -12,7 +12,7 @@ Two mainstream designs:
 | **Archetype** (EnTITT/Unity DOTS) | excellent (contiguous) | expensive (moves rows between tables) | high (many tables) | poor |
 | **Sparse set** (EnTT-classic) | very good (dense arrays) | cheap (swap-remove) | low, predictable | **good** |
 
-Phoenix uses **sparse sets**. Rationale for our targets:
+Phosphorus uses **sparse sets**. Rationale for our targets:
 
 - Predictable, low, *bounded* memory — each component type is one fixed pool sized
   from `phx_caps::max_entities`. No dynamic table proliferation. This is what makes it

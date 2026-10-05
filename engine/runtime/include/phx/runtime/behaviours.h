@@ -158,7 +158,7 @@ bool play_clip(ecs::World& w, ecs::Entity e, NameHash clip);
 bool anim_trigger(ecs::World& w, ecs::Entity e, NameHash trigger);
 
 // "Play from here": the next Behaviours::start puts the player (and its respawn point) at (x, y)
-// instead of its spawn, once. The desktop entry sets it from PHX_PLAY_FROM="x,y", which Phoenix
+// instead of its spawn, once. The desktop entry sets it from PHX_PLAY_FROM="x,y", which Phosphorus
 // Studio's map editor passes when you play from a spot on the map.
 void set_start_override(int32_t x, int32_t y);
 

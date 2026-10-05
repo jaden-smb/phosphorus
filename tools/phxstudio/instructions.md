@@ -1,8 +1,8 @@
-# phxstudio — Phoenix Studio, the editor for the engine
+# phxstudio — Phosphorus Studio, the editor for the engine
 
 ## What it is for
 
-One window for **making a game** with Phoenix: write its code, paint its sprites, lay out its
+One window for **making a game** with Phosphorus: write its code, paint its sprites, lay out its
 tilemaps and edit its data tables, see its baked bundle the way each console receives it, and
 build and run it with a click.
 
@@ -51,7 +51,7 @@ design: they are the project's own build configuration and run whatever they say
 
 ```json
 { "name": "My Game",
-  "description": "A Phoenix game",
+  "description": "A Phosphorus game",
   "source":  ["src"],
   "assets":  ["assets"],
   "bundles": ["build/my_game.phxp"],
@@ -68,7 +68,7 @@ design: they are the project's own build configuration and run whatever they say
 | `bundles` | extra `.phxp` files for the Assets view, relative to the project (it always lists the project's own `*.phxp` and `build/*.phxp`) |
 | `launches[]` | the Run view: `label`, `command`, `group` (`play`, `build`, `test`, `console`, `tool`), `blurb` (status-bar help), `needs` (tools that must be installed; the launch is greyed out without them; `$VAR` is filled from the environment, with `$DEVKITPRO` = `/opt/devkitpro` and `$DEVKITARM` = `$DEVKITPRO/devkitARM` by default), `windowed` (it opens its own window) |
 
-Launch commands run **from the project folder** with `$PHX_ROOT` (the Phoenix checkout) and
+Launch commands run **from the project folder** with `$PHX_ROOT` (the Phosphorus checkout) and
 `$PHX_PROJECT` (the project) exported. A new project uses the engine's generic rules, so it needs
 no edit to the engine's Makefile:
 

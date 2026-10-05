@@ -1,6 +1,6 @@
 // tools/phxpack/dialogue.h — HOST-ONLY dialogue model: the `.dlg` author format (JSON), its
 // validation, and the compiler to the baked Dialogue asset (phx/resource/bundle.h: DialogueHeader
-// and friends; played by phx/runtime/dialogue.h). builders.h build_dialogue bakes it; Phoenix
+// and friends; played by phx/runtime/dialogue.h). builders.h build_dialogue bakes it; Phosphorus
 // Studio's dialogue editor edits it and plays it through DlgSim, which walks the COMPILED tables
 // with the runtime's rules (the dialogue suite checks the two agree step for step).
 //

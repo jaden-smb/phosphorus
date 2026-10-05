@@ -6,7 +6,7 @@ Bakes a **WAV file**, a **sound effect** (`.sfx`) or a **song** (`.song`) into a
 intermediate holding one Sound asset — mono 16-bit PCM the runtime wraps as a `SoundView` and
 plays through the software mixer. `phxpack` merges the `.phxsnd` into the final bundle.
 
-`.sfx` and `.song` are synthesized first, by `tools/phxpack/synth.h` (the same code Phoenix
+`.sfx` and `.song` are synthesized first, by `tools/phxpack/synth.h` (the same code Phosphorus
 Studio's sound effect and song editors play), at 22050 Hz:
 
 - **`.sfx`** is JSON: the parameters of an sfxr-style generator. It holds `wave` (square, saw,

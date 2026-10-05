@@ -1,7 +1,0 @@
-# phoenix-config.cmake — find_package(phoenix CONFIG) entry point for an installed SDK.
-# Imports the engine's static module libraries as phoenix::phx_<module> (link phx_runtime for
-# the whole App stack; the imported targets carry their inter-module dependencies).
-@PACKAGE_INIT@
-
-include("${CMAKE_CURRENT_LIST_DIR}/phoenix-targets.cmake")
-check_required_components(phoenix)

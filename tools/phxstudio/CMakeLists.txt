@@ -1,4 +1,4 @@
-# tools/phxstudio/CMakeLists.txt — Phoenix Studio and its standalone editors (host-only).
+# tools/phxstudio/CMakeLists.txt — Phosphorus Studio and its standalone editors (host-only).
 #   phxnew     always: the new-project CLI (the Studio's File > New project, headless; no SDL)
 #   phxstudio  with -DPHX_USE_SDL=ON: the editor (a window through the engine's own SDL platform
 #   phxtmap    backend and software renderer: the engine's desktop link, like `make studio`,
@@ -43,7 +43,7 @@ if(PHX_USE_SDL)
   target_include_directories(phxentity PRIVATE ${_studio_inc})
   target_link_libraries(phxentity PRIVATE ${_gui_libs})
   target_compile_features(phxentity PRIVATE cxx_std_17)
-  message(STATUS "Phoenix Studio: phxstudio, phxtmap, phxentity (SDL2)")
+  message(STATUS "Phosphorus Studio: phxstudio, phxtmap, phxentity (SDL2)")
 else()
-  message(STATUS "Phoenix Studio: phxnew only (configure with -DPHX_USE_SDL=ON for phxstudio / phxtmap / phxentity)")
+  message(STATUS "Phosphorus Studio: phxnew only (configure with -DPHX_USE_SDL=ON for phxstudio / phxtmap / phxentity)")
 endif()
