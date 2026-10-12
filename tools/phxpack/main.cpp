@@ -10,7 +10,7 @@
 // This is the two-stage pipeline of docs/08: converters -> intermediates -> phxpack -> bundle.
 // Both paths share one bake implementation (builders.h), so output is identical either way.
 //
-//   phxpack --out assets.phxp [--target 0|1|2] [--compress] [--manifest] [--full] <inputs...>
+//   phxpack --out assets.phxp [--target 0|1|2] [--compress] [--manifest] [--full] [--validate-references] <inputs...>
 //   phxpack --upgrade old.phxp [--target N] [--compress]
 //
 //   --compress (-z): LZSS-compress each blob (kept only where it shrinks); the runtime
@@ -67,6 +67,7 @@ bool merge_intermediate(phxtool::BundleWriter& w, const std::string& in, int tar
 int main(int argc, char** argv) {
     std::string out, upgrade;
     int  target = 2;
+    bool validate_references = false;
     bool target_set = false, compress = false, manifest = false, full = false;
     std::vector<std::string> inputs;
 
@@ -76,10 +77,11 @@ int main(int argc, char** argv) {
         else if (a == "--target" && i + 1 < argc)  { target = std::atoi(argv[++i]); target_set = true; }
         else if (a == "--compress" || a == "-z")   compress = true;
         else if (a == "--manifest")                manifest = true;
+        else if (a == "--validate-references") { validate_references = true; full = true; }
         else if (a == "--full")                    full = true;
         else if (a == "--upgrade" && i + 1 < argc) upgrade = argv[++i];
         else if (a == "--help" || a == "-h") {
-            std::printf("usage: phxpack --out FILE [--target 0|1|2] [--compress] [--manifest] [--full] <inputs...>\n"
+            std::printf("usage: phxpack --out FILE [--target 0|1|2] [--compress] [--manifest] [--full] [--validate-references] <inputs...>\n"
                         "       phxpack --upgrade FILE.phxp [--target 0|1|2] [--compress]\n"
                         "  sources:       .png .ppm .tmcsv .tmj .wav .sfx .song .sprdef .font .fnt .dlg\n"
                         "  intermediates: .phxspr .phxtmap .phxsnd .phxbin .phxviz .phxp  (merged)\n"
@@ -209,10 +211,18 @@ int main(int argc, char** argv) {
         next.inputs.push_back(std::move(rec));
     }
 
+    if (!w.validate_inputs(validate_references)) return 1;
     if (!w.write(out)) { std::fprintf(stderr, "phxpack: cannot write '%s'\n", out.c_str()); return 1; }
-    next.out_crc = w.file_crc32();
-    if (!phxtool::lock_write(lock_path, next))
-        std::fprintf(stderr, "phxpack: warning: cannot write '%s'\n", lock_path.c_str());
+    uint32_t output_crc = 0, output_size = 0;
+    if (!phxtool::file_crc32(out, output_crc, output_size) || output_crc != w.file_crc32()) {
+        std::fprintf(stderr, "phxpack: '%s' [Bundle]: written output failed checksum verification\n", out.c_str());
+        return 1;
+    }
+    next.out_crc = output_crc;
+    if (!phxtool::lock_write(lock_path, next)) {
+        std::fprintf(stderr, "phxpack: cannot write '%s'\n", lock_path.c_str());
+        return 1;
+    }
     if (manifest) {
         const std::string mpath = out + ".manifest.txt";
         if (phxtool::manifest_write(mpath, out, w)) std::printf("  + manifest %s\n", mpath.c_str());

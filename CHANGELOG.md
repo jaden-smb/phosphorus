@@ -9,6 +9,11 @@ All notable changes to Phosphorus are documented here. The format follows
 
 ### Fixed
 
+- Project asset baking rejects malformed/unsupported sources, missing or unreadable asset roots,
+  duplicate identifiers and unresolved texture references with source/type diagnostics. Shared
+  sprite/font sheets and cross-type names remain valid; failed bakes remove stale tier bundles
+  and generated data, and repeated valid bakes produce deterministic bundles.
+
 - Game projects share Studio metadata parsing with build/bake/export tools, compile declared
   nested source roots, and keep bundle identity stable across display renames. Custom projects
   expose only supported launches; existing generated projects remain compatible.

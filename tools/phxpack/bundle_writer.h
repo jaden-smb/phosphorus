@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -238,6 +239,63 @@ public:
     const std::string& entry_name(uint32_t i) const { return entries_[i].name; }    // "" if merged raw
     const std::string& entry_source(uint32_t i) const { return entries_[i].source; }
 
+    static const char* type_name(phx::AssetType type) {
+        switch (type) {
+        case phx::AssetType::Texture: return "Texture";
+        case phx::AssetType::Tilemap: return "Tilemap";
+        case phx::AssetType::Sound: return "Sound";
+        case phx::AssetType::Font: return "Font";
+        case phx::AssetType::Blob: return "Blob";
+        case phx::AssetType::Sprite: return "Sprite";
+        case phx::AssetType::Spawns: return "Spawns";
+        case phx::AssetType::Dialogue: return "Dialogue";
+        }
+        return "Unknown";
+    }
+
+    // A logical identifier is (type, hash), never just a stem. Sprites and fonts
+    // intentionally carry their sheets; only byte-identical Texture entries may
+    // be coalesced. Every other duplicate is ambiguous even if its bytes match.
+    bool validate_inputs(bool references = false) {
+        for (size_t i = 0; i < entries_.size(); ++i) {
+            const Entry& a = entries_[i];
+            for (size_t j = 0; j < i; ++j) {
+                const Entry& b = entries_[j];
+                if (a.hash != b.hash || a.type != b.type) continue;
+                if (a.type == phx::AssetType::Texture && a.blob == b.blob) continue;
+                std::fprintf(stderr, "phxpack: '%s' [%s]: duplicate asset identifier 0x%08x%s%s; also defined by '%s'\n",
+                             a.source.c_str(), type_name(a.type), unsigned(a.hash),
+                             a.name.empty() ? "" : " name=", a.name.c_str(), b.source.c_str());
+                return false;
+            }
+            if (!references) continue;
+            phx::NameHash ref = 0;
+            size_t offset = 0, required = 0;
+            if (a.type == phx::AssetType::Sprite) {
+                offset = offsetof(phx::SpriteBlobHeader, texture); required = sizeof(phx::SpriteBlobHeader);
+            } else if (a.type == phx::AssetType::Font) {
+                offset = offsetof(phx::FontBlobHeader, texture); required = sizeof(phx::FontBlobHeader);
+            } else if (a.type == phx::AssetType::Tilemap) {
+                offset = offsetof(phx::TilemapBlobHeader, tileset); required = sizeof(phx::TilemapBlobHeader);
+            }
+            if (!required) continue;
+            if (a.blob.size() < required) {
+                std::fprintf(stderr, "phxpack: '%s' [%s]: truncated asset header\n", a.source.c_str(), type_name(a.type));
+                return false;
+            }
+            std::memcpy(&ref, a.blob.data() + offset, sizeof(ref));
+            const bool found = std::any_of(entries_.begin(), entries_.end(), [&](const Entry& e) {
+                return e.type == phx::AssetType::Texture && e.hash == ref;
+            });
+            if (!found) {
+                std::fprintf(stderr, "phxpack: '%s' [%s]: missing Texture reference 0x%08x\n",
+                             a.source.c_str(), type_name(a.type), unsigned(ref));
+                return false;
+            }
+        }
+        return true;
+    }
+
     // CRC32 of the COMPLETE file written by the last successful write() (header included).
     // The lock file records it so a later invocation can prove the output on disk is exactly
     // the bundle this bake produced (not stale, not hand-edited).
@@ -247,7 +305,11 @@ public:
     bool write(const std::string& path) {
         // sort by name hash so the runtime can binary-search the TOC
         std::sort(entries_.begin(), entries_.end(),
-                  [](const Entry& a, const Entry& b) { return a.hash < b.hash; });
+                  [](const Entry& a, const Entry& b) { return a.hash != b.hash ? a.hash < b.hash : a.type < b.type; });
+
+        entries_.erase(std::unique(entries_.begin(), entries_.end(), [](const Entry& a, const Entry& b) {
+            return a.hash == b.hash && a.type == phx::AssetType::Texture && b.type == a.type && a.blob == b.blob;
+        }), entries_.end());
 
         const uint32_t count    = uint32_t(entries_.size());
         const uint32_t toc_off  = uint32_t(sizeof(phx::BundleHeader));
@@ -299,9 +361,10 @@ public:
 
         FILE* fp = std::fopen(path.c_str(), "wb");
         if (!fp) return false;
-        std::fwrite(&h, sizeof(h), 1, fp);
-        std::fwrite(buf.data(), 1, buf.size(), fp);
-        std::fclose(fp);
+        const bool wrote_header = std::fwrite(&h, sizeof(h), 1, fp) == 1;
+        const bool wrote_body = std::fwrite(buf.data(), 1, buf.size(), fp) == buf.size();
+        const bool closed = std::fclose(fp) == 0;
+        if (!wrote_header || !wrote_body || !closed) return false;
         file_crc32_ = phx::crc32_finish(phx::crc32(buf.data(), buf.size(),
                                                    phx::crc32(&h, sizeof(h))));
         return true;

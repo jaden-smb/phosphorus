@@ -14,126 +14,192 @@ converters `make check` covers on every author file it finds, then the assembler
 
 Output: <project>/build/<slug>.phxp (tier 2, PC) or <slug>.t<N>.phxp for --tier 0/1. Asset names
 are the file stems ("hero"_hash is assets/hero.sprdef). Used by `make game-assets PROJECT=...`.
-Exit status is non-zero on the first converter failure (its message is printed as-is).
+All files in declared asset folders are required sources. Unsupported formats, discovery,
+conversion, identifier and assembly failures return nonzero with resource diagnostics.
+Failed bakes invalidate the tier bundle/lock and generated data; successful bundles are
+published only after assembly validates identifiers and texture references.
 """
 import argparse
 import json
 import os
-import re
+import shutil
 import subprocess
 import sys
 from project_config import load_project
 
 
+class BakeError(Exception):
+    pass
+
+
 def main():
     ap = argparse.ArgumentParser(description="Bake a Phosphorus game project's assets into one .phxp bundle.")
     ap.add_argument("project", help="the project folder (holding phxproject.json)")
-    ap.add_argument("--tools", required=True, help="folder with the built phxsprite/phxtile/phxsnd/phxbin/phxpack")
-    ap.add_argument("--tier", type=int, default=2, choices=(0, 1, 2), help="0 GBA, 1 PSP, 2 PC (default)")
+    ap.add_argument("--tools", required=True, help="folder with the built converters and phxpack/phxnew")
+    ap.add_argument("--tier", type=int, default=2, choices=(0, 1, 2))
     args = ap.parse_args()
-
     proj = os.path.abspath(args.project)
-    try:
-        meta = load_project(proj, os.path.join(os.path.abspath(args.tools), "phxnew"))
-    except (OSError, ValueError, subprocess.CalledProcessError) as e:
-        print(f"bake_project: {getattr(e, 'stderr', '') or e}", file=sys.stderr)
-        return 1
-    if meta["build"] != "generic":
-        print("bake_project: custom-build project; use its configured launches", file=sys.stderr)
-        return 1
-    name = meta["id"]
-    folders = meta["assets"]
-
-    files = []
-    for folder in folders:
-        root = os.path.join(proj, folder)
-        for dirpath, dirnames, names in os.walk(root):
-            dirnames.sort()
-            for n in sorted(names):
-                files.append(os.path.join(dirpath, n))
-
+    tool = lambda t: os.path.join(os.path.abspath(args.tools), t)
     build = os.path.join(proj, "build")
     inter = os.path.join(build, "intermediate", f"t{args.tier}")
     gen = os.path.join(build, "gen")
-    os.makedirs(inter, exist_ok=True)
-    os.makedirs(gen, exist_ok=True)
-    tool = lambda t: os.path.join(os.path.abspath(args.tools), t)
-    tier = ["--target", str(args.tier)]
+    bundle = None
+    pending = None
+    sources = {}
+    receipt = os.path.join(build, f".bake-output-t{args.tier}")
 
-    def run(cmd):
-        r = subprocess.run(cmd)
-        if r.returncode != 0:
-            print(f"bake_project: FAILED: {' '.join(cmd)}", file=sys.stderr)
-            sys.exit(1)
+    def fail(path, kind, why):
+        raise BakeError(f"{path} [{kind}]: {why}")
 
-    pack_inputs, sheets, pngs = [], set(), []
-    for p in files:
-        stem, ext = os.path.splitext(os.path.basename(p))
-        ext = ext.lower()
-        if ext == ".sprdef":
-            with open(p, encoding="utf-8", errors="replace") as f:
-                for line in f:
-                    m = re.match(r"\s*sheet\s+(\S+)", line)
-                    if m:
-                        sheets.add(os.path.normpath(os.path.join(os.path.dirname(p), m.group(1))))
-            out = os.path.join(inter, stem + ".phxspr")
-            run([tool("phxsprite"), "--out", out, "--name", stem] + tier + [p])
-            pack_inputs.append(out)
-        elif ext in (".font", ".fnt"):
-            with open(p, encoding="utf-8", errors="replace") as f:
-                text = f.read()
-            if ext == ".font":
+    def run(cmd, path, kind):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
+        except OSError as e:
+            fail(path, kind, f"cannot run {cmd[0]}: {e}")
+        if r.returncode:
+            for baked, author in sources.items():
+                r.stderr = r.stderr.replace(baked, author)
+            fail(path, kind, f"{os.path.basename(cmd[0])} exited {r.returncode}: "
+                 + (r.stderr.strip() or r.stdout.strip() or "no diagnostic"))
+        if r.stdout:
+            print(r.stdout, end="")
+        if r.stderr:
+            print(r.stderr, end="", file=sys.stderr)
+
+    def remove_outputs():
+        for base in (bundle, pending):
+            if base:
+                for suffix in ("", ".lock", ".manifest.txt"):
+                    try:
+                        os.unlink(base + suffix)
+                    except FileNotFoundError:
+                        pass
+
+    try:
+        # Remember only our own output name, so even broken metadata invalidates the
+        # previous bake without deleting unrelated bundles in the project.
+        if os.path.isfile(receipt):
+            with open(receipt, encoding="utf-8") as f:
+                previous = f.read().strip()
+            suffix = ".phxp" if args.tier == 2 else f".t{args.tier}.phxp"
+            if previous != os.path.basename(previous) or not previous.endswith(suffix):
+                fail(receipt, "Bake output record", "invalid bundle filename")
+            bundle = os.path.join(build, previous)
+            pending = bundle + ".pending"
+            remove_outputs()
+        try:
+            meta = load_project(proj, tool("phxnew"))
+        except (OSError, ValueError, subprocess.CalledProcessError) as e:
+            fail(os.path.join(proj, "phxproject.json"), "Project", getattr(e, "stderr", "") or str(e))
+        if meta["build"] != "generic":
+            fail(os.path.join(proj, "phxproject.json"), "Project", "custom-build project; use its configured launches")
+        bundle = os.path.join(build, meta["id"] + (".phxp" if args.tier == 2 else f".t{args.tier}.phxp"))
+        pending = bundle + ".pending"
+        # Invalidate the previous success BEFORE discovery or conversion can fail.
+        remove_outputs()
+        os.makedirs(build, exist_ok=True)
+        with open(receipt, "w", encoding="utf-8") as f:
+            f.write(os.path.basename(bundle))
+        for directory in (inter, gen):
+            if os.path.isdir(directory):
+                shutil.rmtree(directory)
+            os.makedirs(directory, exist_ok=True)
+
+        files = []
+        for folder in meta["assets"]:
+            root = os.path.join(proj, folder)
+            if not os.path.isdir(root):
+                fail(root, "Asset directory", "missing or not a directory")
+            def walk_error(e):
+                fail(e.filename, "Asset directory", str(e))
+            for dirpath, dirnames, names in os.walk(root, onerror=walk_error):
+                dirnames.sort()
+                for d in dirnames:
+                    if os.path.islink(os.path.join(dirpath, d)):
+                        fail(os.path.join(dirpath, d), "Asset directory", "symlink directories are not traversed; declare the real directory")
+                files.extend(os.path.join(dirpath, n) for n in sorted(names))
+
+        inputs, identifiers = [], {}
+        tier = ["--target", str(args.tier)]
+        # JSON is inspected only to select a converter. All schema/source validation is
+        # performed by the shared C++ builders used by the converters and Studio.
+        for p in files:
+            stem, ext = os.path.splitext(os.path.basename(p))
+            ext = ext.lower()
+            kind, converter, output_ext = {
+                ".sprdef": ("Sprite", "phxsprite", ".phxspr"),
+                ".font": ("Font", "phxsprite", ".phxspr"),
+                ".fnt": ("Font", "phxsprite", ".phxspr"),
+                ".tmj": ("Tilemap", "phxtile", ".phxtmap"),
+                ".wav": ("Sound", "phxsnd", ".phxsnd"),
+                ".sfx": ("Sound", "phxsnd", ".phxsnd"),
+                ".song": ("Sound", "phxsnd", ".phxsnd"),
+                ".dlg": ("Dialogue", None, None),
+                ".png": ("Texture", None, None),
+                ".ppm": ("Texture", None, None),
+                ".tmcsv": ("Tilemap", None, None),
+            }.get(ext, (None, None, None))
+            if ext == ".json":
                 try:
-                    img = json.loads(text).get("image", "")
-                except ValueError:
-                    img = ""
+                    with open(p, encoding="utf-8") as f:
+                        doc = json.load(f)
+                except (OSError, ValueError) as e:
+                    fail(p, "JSON asset (Sprite/Blob)", str(e))
+                if isinstance(doc, dict) and any(k in doc for k in ("struct", "fields", "records")):
+                    kind, converter, output_ext = "Blob", "phxbin", ".phxbin"
+                elif isinstance(doc, dict) and any(k in doc for k in ("animations", "image")):
+                    kind, converter, output_ext = "Sprite", "phxsprite", ".phxspr"
+                else:
+                    fail(p, "JSON asset", "unsupported schema; expected a sprite or phxbin table")
+            if not kind:
+                fail(p, ext or "Asset", "unsupported source format")
+            key = (kind, stem)
+            if key in identifiers:
+                fail(p, kind, f"duplicate asset identifier '{stem}'; also defined by {identifiers[key]}")
+            identifiers[key] = p
+            if converter:
+                # Type subdirectories prevent Font/Sprite intermediate-name collisions.
+                directory = os.path.join(inter, kind)
+                os.makedirs(directory, exist_ok=True)
+                out = os.path.join(directory, stem + output_ext)
+                cmd = [tool(converter), "--out", out, "--name", stem] + tier + [p]
+                if kind == "Blob":
+                    cmd += ["--header", os.path.join(gen, stem + ".gen.h")]
+                run(cmd, p, kind)
+                if not os.path.isfile(out) or not os.path.getsize(out):
+                    fail(p, kind, f"converter produced no output: {out}")
+                if kind == "Blob":
+                    header = os.path.join(gen, stem + ".gen.h")
+                    if not os.path.isfile(header) or not os.path.getsize(header):
+                        fail(p, kind, f"converter produced no header: {header}")
+                sources[out] = f"{p} [{kind}]"
+                inputs.append(out)
             else:
-                m = re.search(r'page\s+id=0\s+file="([^"]+)"', text)
-                img = m.group(1) if m else ""
-            if img:
-                sheets.add(os.path.normpath(os.path.join(os.path.dirname(p), img)))
-            out = os.path.join(inter, stem + ".phxspr")
-            run([tool("phxsprite"), "--out", out, "--name", stem] + tier + [p])
-            pack_inputs.append(out)
-        elif ext == ".json":
-            try:
-                with open(p, encoding="utf-8") as f:
-                    doc = json.load(f)
-            except ValueError as e:
-                print(f"bake_project: skipping {p}: {e}", file=sys.stderr)
-                continue
-            if isinstance(doc, dict) and "animations" in doc and "image" in doc:
-                sheets.add(os.path.normpath(os.path.join(os.path.dirname(p), doc["image"])))
-                out = os.path.join(inter, stem + ".phxspr")
-                run([tool("phxsprite"), "--out", out, "--name", stem] + tier + [p])
-                pack_inputs.append(out)
-            elif isinstance(doc, dict) and "fields" in doc and "records" in doc:
-                out = os.path.join(inter, stem + ".phxbin")
-                run([tool("phxbin"), "--out", out, "--name", stem, "--header",
-                     os.path.join(gen, stem + ".gen.h")] + tier + [p])
-                pack_inputs.append(out)
-        elif ext == ".tmj":
-            out = os.path.join(inter, stem + ".phxtmap")
-            run([tool("phxtile"), "--out", out, "--name", stem] + tier + [p])
-            pack_inputs.append(out)
-        elif ext in (".wav", ".sfx", ".song"):
-            out = os.path.join(inter, stem + ".phxsnd")
-            run([tool("phxsnd"), "--out", out, "--name", stem] + tier + [p])
-            pack_inputs.append(out)
-        elif ext == ".dlg":
-            pack_inputs.append(p)
-        elif ext == ".png":
-            pngs.append(p)
-
-    # PNGs a sprite or font already carries as its sheet are not baked twice
-    pack_inputs += [p for p in pngs if os.path.normpath(p) not in sheets]
-    if not pack_inputs:
-        print(f"bake_project: nothing to bake in {', '.join(folders)}", file=sys.stderr)
+                sources[p] = f"{p} [{kind}]"
+                inputs.append(p)
+        if not inputs:
+            fail(proj, "Project assets", "nothing to bake in " + ", ".join(meta["assets"]))
+        # Sheets are baked by their own validators too. The assembler coalesces identical
+        # Texture payloads carried by sprites/fonts; conflicting definitions are errors.
+        run([tool("phxpack"), "--out", pending, "--full", "--validate-references"] + tier + inputs,
+            proj, "Project bundle")
+        if not os.path.isfile(pending) or not os.path.isfile(pending + ".lock"):
+            fail(pending, "Project bundle", "assembler produced no bundle/lock")
+        os.replace(pending + ".lock", bundle + ".lock")
+        os.replace(pending, bundle)
+        print(f"bake_project: {len(inputs)} inputs -> {os.path.relpath(bundle, proj)}")
+        return 0
+    except (BakeError, OSError) as e:
+        diagnostic = f"{e.filename or proj} [Bake I/O]: {e}" if isinstance(e, OSError) else str(e)
+        print(f"bake_project: {diagnostic}", file=sys.stderr)
+        try:
+            remove_outputs()
+            for directory in (inter, gen):
+                if bundle and os.path.isdir(directory):
+                    shutil.rmtree(directory)
+        except OSError as cleanup:
+            print(f"bake_project: cleanup failed: {cleanup}", file=sys.stderr)
         return 1
-    bundle = os.path.join(build, name + (".phxp" if args.tier == 2 else f".t{args.tier}.phxp"))
-    run([tool("phxpack"), "--out", bundle] + tier + pack_inputs)
-    print(f"bake_project: {len(pack_inputs)} inputs -> {os.path.relpath(bundle, proj)}")
-    return 0
 
 
 if __name__ == "__main__":

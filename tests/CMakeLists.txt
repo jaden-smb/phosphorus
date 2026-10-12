@@ -214,3 +214,13 @@ target_include_directories(it_emberwing_ppu PRIVATE
   ${CMAKE_SOURCE_DIR}/engine/ui/include
   ${CMAKE_SOURCE_DIR}/engine/runtime/include)
 add_test(NAME emberwing-ppu COMMAND it_emberwing_ppu WORKING_DIRECTORY ${_test_wd})
+
+# G4: real project discovery -> converters -> validated assembler, positive/negative.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(NAME project_bake
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/common/test_bake_project.py
+    --tools $<TARGET_FILE_DIR:phxnew>
+    --tool phxnew=$<TARGET_FILE:phxnew> --tool phxsprite=$<TARGET_FILE:phxsprite>
+    --tool phxtile=$<TARGET_FILE:phxtile> --tool phxsnd=$<TARGET_FILE:phxsnd>
+    --tool phxbin=$<TARGET_FILE:phxbin> --tool phxpack=$<TARGET_FILE:phxpack>
+  WORKING_DIRECTORY ${_test_wd})

@@ -300,7 +300,32 @@ else. This is `projectdoc.h: AccessPolicy`, applied to every open and save and a
 `make editors`. `--engine-dev` is the engine-maintenance mode: the whole checkout, plus the module
 graph and the gates. Projects build with the engine's generic rules
 (`make game | game-assets | play PROJECT=path`) against the public headers only. The asset step
-(`tools/common/bake_project.py`) runs the converters above and then `phxpack`.
+(`tools/common/bake_project.py`) loads normalized metadata through `phxnew`, walks each
+specified asset root in sorted order, selects the existing per-format converter, and assembles
+its intermediates plus direct image/dialogue sources with `phxpack`. JSON is inspected only
+for converter selection; the shared C++ builders validate author schemas and sheet references.
+Every file under an asset root is a required source: malformed JSON, unknown JSON schemas,
+unsupported extensions, missing roots, unreadable directories/files, and symlink directories
+fail with a nonzero status and a file/type/reason diagnostic. Keep documentation and other
+non-asset files outside these roots.
+
+Names are source stems, scoped by asset type. Two source files defining the same type/stem
+fail before they can overwrite an intermediate, and the assembler checks actual type/hash
+collisions. Sprite and Font intermediates occupy separate type directories. Shared,
+byte-identical Texture payloads carried by sprites/fonts are coalesced; conflicting textures
+fail. A Sprite and Texture (or another type) may share a logical name. Project assembly uses
+`--validate-references` to require Sprite/Font/Tilemap texture references to resolve inside the
+bundle; standalone converter intermediates may still refer to assets supplied at assembly.
+This checks baked texture references, not arbitrary game-defined strings in data tables.
+
+Each bake recreates its tier's intermediates and generated headers, invalidates its old
+bundle/lock/manifest, and writes the new bundle to a pending path. It publishes the bundle
+only after validated assembly, intermediate CRC checks, output read-back checksum verification,
+and successful output/lock writes. Failures remove pending
+outputs and generated data. A small per-tier output-name record lets a subsequent bake
+invalidate its own previous bundle even if project metadata is malformed or its id changes.
+Other tiers' bundles remain available. `make pipeline` includes real CLI project-bake
+integration tests, including repeated byte-identical bakes for all three target tiers.
 
 The editors write **author formats only** (`.png`, `.sprdef`/sprite `.json`, `.tmj`, phxbin
 `.json`, source). The bake stays the single writer of engine blobs (§1). Every saved form is

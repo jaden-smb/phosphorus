@@ -35,7 +35,7 @@ namespace phxtool {
 // Bump when the BAKE LOGIC changes in a way that alters output for identical inputs (new
 // encoders, resample changes, ...). Distinct from kBundleVersion (the on-disk format): either
 // changing invalidates every lock, so stale bundles are re-baked instead of trusted.
-constexpr uint32_t kPhxpackToolVersion = 2;
+constexpr uint32_t kPhxpackToolVersion = 3;
 
 struct LockAsset { uint32_t hash = 0; uint16_t type = 0; };
 struct LockInput {
@@ -63,7 +63,9 @@ inline bool file_crc32(const std::string& path, uint32_t& crc, uint32_t& size) {
         c = phx::crc32(buf, got, c);
         n += uint32_t(got);
     }
-    std::fclose(f);
+    const bool read = std::ferror(f) == 0;
+    const bool closed = std::fclose(f) == 0;
+    if (!read || !closed) return false;
     crc = phx::crc32_finish(c); size = n;
     return true;
 }
@@ -114,8 +116,9 @@ inline bool lock_write(const std::string& path, const LockFile& l) {
         for (const LockAsset& a : in.assets)
             std::fprintf(f, " asset %08x type %u\n", a.hash, unsigned(a.type));
     }
-    std::fclose(f);
-    return true;
+    const bool wrote = std::ferror(f) == 0;
+    const bool closed = std::fclose(f) == 0;
+    return wrote && closed;
 }
 
 inline const char* asset_type_name(phx::AssetType t) {

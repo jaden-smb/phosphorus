@@ -66,3 +66,11 @@ Asset names default to the input file's stem (e.g. `hero.sprdef` → `"hero"`).
 
 Verified end to end by `make phxpack` (CLI smoke over every input type), `make pipeline`
 (in-process), and `make tools` (real binaries, converters → merge).
+
+The assembler rejects duplicate `(asset type, name hash)` identifiers and reports both input
+files. Identical Texture payloads are coalesced so sprites/fonts can share sheets. Different
+asset types may share a name. `--validate-references` additionally checks that Sprite, Font
+and Tilemap texture references resolve within the assembled bundle (and forces a full bake).
+Project baking uses this option; converter intermediates may be assembled without it when
+referenced textures will be supplied later. Intermediate header/bounds/checksum failures, bundle/header and lock write failures, and
+written-output checksum mismatches are fatal.

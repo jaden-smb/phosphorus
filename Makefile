@@ -1574,8 +1574,9 @@ phxpack: $(PHXPACK)
 # The two-stage pipeline in-process: converters bake intermediates, phxpack merges, the cache
 # mounts and reads back every asset type. Also drops the build/p_* source fixtures the CLI smoke
 # (`tools`) re-runs the real binaries over.
-pipeline: $(PIPELINE)
+pipeline: $(PIPELINE) $(PHXNEW) $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) $(PHXPACK)
 	@./$(PIPELINE)
+	@python3 tools/common/test_bake_project.py --tools $(BUILD)
 
 level: $(LEVEL)
 	@./$(LEVEL)

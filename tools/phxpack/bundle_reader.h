@@ -7,6 +7,7 @@
 
 #include "phx/resource/bundle.h"
 #include "phx/resource/lz.h"
+#include "phx/core/crc32.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -43,6 +44,9 @@ inline bool bundle_read(const std::string& path, std::vector<ReadAsset>& out,
     phx::BundleHeader h{};
     std::memcpy(&h, buf.data(), sizeof(h));
     if (h.magic != phx::kBundleMagic || h.version != phx::kBundleVersion) return false;
+    if (h.target > 2 || h.total_size != buf.size() || h.toc_offset < sizeof(h) || h.toc_offset > buf.size()) return false;
+    // Keep the format's explicit CRC=0 opt-out, but never merge a corrupt checked bundle.
+    if (h.blob_crc32 && h.blob_crc32 != phx::crc32_of(buf.data() + h.toc_offset, buf.size() - h.toc_offset)) return false;
     if (size_t(h.toc_offset) + size_t(h.asset_count) * sizeof(phx::TocEntry) > buf.size()) return false;
     if (hdr_out) *hdr_out = h;
 
@@ -51,7 +55,8 @@ inline bool bundle_read(const std::string& path, std::vector<ReadAsset>& out,
     for (uint32_t i = 0; i < h.asset_count; ++i) {
         phx::TocEntry e{};
         std::memcpy(&e, buf.data() + h.toc_offset + i * sizeof(phx::TocEntry), sizeof(e));
-        if (size_t(e.offset) + e.size > buf.size()) return false;
+        if (e.offset < size_t(h.toc_offset) + size_t(h.asset_count) * sizeof(phx::TocEntry) ||
+            size_t(e.offset) + e.size > buf.size()) return false;
         ReadAsset a;
         a.hash = e.name_hash;
         a.type = phx::AssetType(e.type);

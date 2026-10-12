@@ -89,3 +89,9 @@ runs a bounded number of frames, asserts on the framebuffer / ECS / mixer output
   plus 1 µs per `clock_ns()` read — so frame pacing does not depend on how often the loop reads the
   clock. Tests that assert exact fixed-step counts rely on this.
 - **Zero warnings** under `-Wall -Wextra -Wpedantic`, including in test code.
+
+`make pipeline` also runs `tools/common/test_bake_project.py` against the real host CLIs.
+Its temporary projects cover discovery/read failures, malformed and unsupported source data,
+identifier collisions, source/texture references, cross-type names/shared sheets, stale-output
+cleanup, output CRC/TOC consistency and deterministic repeated bakes on all target tiers.
+The same test is registered as `project_bake` in CTest.

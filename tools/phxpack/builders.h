@@ -40,7 +40,13 @@ inline std::string dir_of(const std::string& path) {
 }
 inline bool ends_with(const std::string& s, const char* suf) {
     size_t n = std::strlen(suf);
-    return s.size() >= n && s.compare(s.size() - n, n, suf) == 0;
+    if (s.size() < n) return false;
+    for (size_t i = 0; i < n; ++i) {
+        char c = s[s.size() - n + i];
+        if (c >= 'A' && c <= 'Z') c = char(c - 'A' + 'a');
+        if (c != suf[i]) return false;
+    }
+    return true;
 }
 
 inline bool read_file(const std::string& path, std::vector<uint8_t>& out) {
@@ -572,6 +578,10 @@ inline bool build_bin(BundleWriter& w, const std::string& in, const std::string&
         BinField f; f.name = fv.str_at("name"); f.type = fv.str_at("type");
         if (f.name.empty() || !bin_type_info(f.type, f.size, f.align)) {
             std::fprintf(stderr, "phx: '%s' bad field (name/type)\n", in.c_str()); return false; }
+        for (const BinField& previous : fs) if (phx::fnv1a(previous.name.c_str()) == phx::fnv1a(f.name.c_str())) {
+            std::fprintf(stderr, "phx: '%s' [Blob]: duplicate field identifier '%s'\n", in.c_str(), f.name.c_str());
+            return false;
+        }
         off = (off + f.align - 1) & ~(f.align - 1);   // natural alignment
         f.offset = off; off += f.size;
         if (f.align > maxa) maxa = f.align;
@@ -579,6 +589,9 @@ inline bool build_bin(BundleWriter& w, const std::string& in, const std::string&
     }
     const uint32_t stride = (off + maxa - 1) & ~(maxa - 1);   // pad struct to its alignment
 
+    if (recs && !recs->is_arr()) {
+        std::fprintf(stderr, "phx: '%s' [Blob]: records must be an array\n", in.c_str()); return false;
+    }
     const uint32_t count = (recs && recs->is_arr()) ? uint32_t(recs->arr.size()) : 0;
     std::vector<uint8_t> blob(8 + size_t(count) * stride, 0);
     std::memcpy(blob.data() + 0, &count, 4);
@@ -586,7 +599,18 @@ inline bool build_bin(BundleWriter& w, const std::string& in, const std::string&
     for (uint32_t r = 0; r < count; ++r) {
         std::vector<uint8_t> rec(stride, 0);
         const JsonValue& rv = recs->arr[r];
-        for (const BinField& f : fs) if (const JsonValue* v = rv.find(f.name.c_str())) bin_write_field(rec, f.offset, f, *v);
+        if (!rv.is_obj()) {
+            std::fprintf(stderr, "phx: '%s' [Blob]: record %u must be an object\n", in.c_str(), unsigned(r)); return false;
+        }
+        for (const BinField& f : fs) if (const JsonValue* v = rv.find(f.name.c_str())) {
+            const bool valid = bin_str_size(f.type) ? v->type == JsonValue::Str : v->type == JsonValue::Num;
+            if (!valid) {
+                std::fprintf(stderr, "phx: '%s' [Blob]: record %u field '%s' expects %s\n", in.c_str(), unsigned(r),
+                             f.name.c_str(), bin_str_size(f.type) ? "a string" : "a number");
+                return false;
+            }
+            bin_write_field(rec, f.offset, f, *v);
+        }
         std::memcpy(blob.data() + 8 + size_t(r) * stride, rec.data(), stride);
     }
     // The schema trailer (phx/resource/bundle.h): padded to 4 bytes, then magic, field count and
@@ -630,7 +654,12 @@ inline bool build_bin(BundleWriter& w, const std::string& in, const std::string&
         std::fprintf(h, "struct %sTable {\n    uint32_t count;\n    uint32_t stride;\n    %s records[];\n};\n\n",
                      sname.c_str(), sname.c_str());
         std::fprintf(h, "} // namespace phxbin\n");
-        std::fclose(h);
+        const bool wrote = std::ferror(h) == 0;
+        const bool closed = std::fclose(h) == 0;
+        if (!wrote || !closed) {
+            std::fprintf(stderr, "phx: '%s' [Blob]: cannot write header '%s'\n", in.c_str(), header_out.c_str());
+            return false;
+        }
         std::printf("  + header  %s\n", header_out.c_str());
     }
     return true;

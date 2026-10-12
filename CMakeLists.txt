@@ -88,6 +88,12 @@ if(NOT CMAKE_CROSSCOMPILING)
   add_subdirectory(tools/phxbin)      # JSON            -> .phxbin (+ .gen.h)
   add_subdirectory(tools/phxviz)      # WAV             -> .phxviz (visualization track)
   add_subdirectory(tools/phxstudio)   # phxnew (+ phxstudio / phxtmap / phxentity with PHX_USE_SDL)
+  # builders.h shares visualization analysis with all converter front-ends.
+  foreach(_tool phxpack phxsprite phxtile phxsnd phxbin)
+    target_include_directories(${_tool} PRIVATE
+      ${CMAKE_SOURCE_DIR}/tools/phxviz
+      ${CMAKE_SOURCE_DIR}/examples/miracle-player/src)
+  endforeach()
   enable_testing()
   add_subdirectory(tests)
 endif()
