@@ -6,6 +6,8 @@
 // HUD draws, and an end screen restarts the game with the totals cleared. Both scalar tiers.
 #include "phx/runtime/app.h"
 #include "phx/runtime/flow.h"
+#include "phx/runtime/font.h"
+#include "phx/platform/gfx_soft.h"
 
 #include "builders.h"                 // tools/phxpack: the converters' bake logic
 #include "editor.h"                   // tools/phxtmap: TmapDoc
@@ -15,6 +17,7 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <string>
 
 extern "C" void phx_null_set_max_frames(uint64_t n);
 extern "C" void phx_null_set_button_script(const uint32_t* masks, uint32_t n);
@@ -47,6 +50,49 @@ const char* kPrefabs =
 "               {\"type\":\"door\",\"w\":4,\"h\":8,\"layer\":8,\"mask\":1,\"components\":\"Exit\"},"
 "               {\"type\":\"spike\",\"w\":4,\"h\":8,\"layer\":4,\"mask\":1,\"components\":\"Hazard\"} ] }";
 
+struct HudCase {
+    std::string label, expected;
+    int32_t value = 0, lives = 0, deaths = 0;
+    const char* expected_lives = nullptr;
+};
+const HudCase kHudCases[] = {
+    { "", "COINS 0" },
+    { "COINS", "COINS -1", -1 },
+    { std::string(15, 'A'), std::string(15, 'A') + " 2147483647", INT32_MAX }, // template str16 maximum
+    { std::string(31, 'B'), std::string(31, 'B') + " 0" }, // str32 maximum
+    { std::string(63, 'C'), std::string(27, 'C') + " -2147483648", INT32_MIN }, // maximum authorable str64
+    { std::string(26, 'D'), std::string(26, 'D') + " -2147483648", INT32_MIN },
+    { std::string(27, 'E'), std::string(27, 'E') + " -2147483648", INT32_MIN }, // exactly 39 bytes
+    { std::string(28, 'F'), std::string(27, 'F') + " -2147483648", INT32_MIN }, // one byte over
+    { std::string(28, 'G'), std::string(28, 'G') + " 2147483647", INT32_MAX },
+    { std::string(29, 'H'), std::string(28, 'H') + " 2147483647", INT32_MAX },
+    { std::string(37, 'I'), std::string(37, 'I') + " 0" },
+    { std::string(38, 'J'), std::string(37, 'J') + " 0" },
+    { "COINS", "COINS 0", 0, 1, 1, "LIVES 0" },
+    { "COINS", "COINS 0", 0, 1, 2, "LIVES -1" },
+    { "COINS", "COINS 0", 0, INT32_MAX, 0, "LIVES 2147483647" },
+    { "COINS", "COINS 0", 0, INT32_MIN, 0, "LIVES -2147483648" },
+    { "COINS", "COINS 0", 0, INT32_MAX, INT32_MIN, "LIVES 4294967295" },
+    { "COINS", "COINS 0", 0, INT32_MIN, INT32_MAX, "LIVES -4294967295" },
+};
+
+bool bake_hud(phxtool::BundleWriter& w) {
+    // Author JSON directly: exercise runtime safety without Studio validation (including
+    // i32 lives, rather than the template's u8). The real baker supplies str64 termination.
+    std::string json = "{\"struct\":\"Screen\",\"fields\":["
+        "{\"name\":\"name\",\"type\":\"str16\"},{\"name\":\"kind\",\"type\":\"str16\"},"
+        "{\"name\":\"map\",\"type\":\"str16\"},{\"name\":\"label\",\"type\":\"str64\"},"
+        "{\"name\":\"lives\",\"type\":\"i32\"}],\"records\":[";
+    for (size_t i = 0; i < sizeof(kHudCases) / sizeof(kHudCases[0]); ++i) {
+        if (i) json += ',';
+        json += "{\"name\":\"hud" + std::to_string(i) + "\",\"kind\":\"level\",\"map\":\"l2\",\"label\":\"" +
+            kHudCases[i].label + "\",\"lives\":" + std::to_string(kHudCases[i].lives) + "}";
+    }
+    json += "]}";
+    write_file("build/f_hud.json", json.c_str());
+    return phxtool::build_bin(w, "build/f_hud.json", "hudflow");
+}
+
 bool bake() {
     std::vector<uint32_t> atlas(size_t(phxtool::kAsciiFontW) * phxtool::kAsciiFontH);
     phxtool::build_ascii_font(atlas.data());
@@ -66,7 +112,7 @@ bool bake() {
     phxtool::BundleWriter w(2);
     return phxtool::build_png(w, "build/f_font.png", "font") && phxtool::build_tmj(w, "build/f_l1.tmj", "l1") &&
            phxtool::build_tmj(w, "build/f_l2.tmj", "l2") && phxtool::build_bin(w, "build/f_flow.json", "flow") &&
-           phxtool::build_bin(w, "build/f_prefabs.json", "prefabs") && w.write("build/f_flow.phxp");
+           phxtool::build_bin(w, "build/f_prefabs.json", "prefabs") && bake_hud(w) && w.write("build/f_flow.phxp");
 }
 
 constexpr uint32_t kRight = 1u << 3, kStart = 1u << 10;
@@ -111,6 +157,49 @@ struct FlowGame final : Game {
         if (flow.in_level() && app.render().stats().sprites_submitted > 0) hud_drawn = true;
     }
 };
+
+struct HudGame final : Game {
+    ResourceCache* res = nullptr;
+    GameFlow flow;
+    BitmapFont font;
+    UI ui;
+    void on_start(App& app) override {
+        res = ResourceCache::create(app.mem().persistent()).unwrap();
+        check(res->mount(app.platform(), "build/f_flow.phxp") == Status::Ok, "mount HUD fixtures");
+        FlowOptions opt; opt.table = "hudflow"_hash;
+        check(flow.start(app, *res, opt) == Status::Ok, "start HUD fixtures");
+        check(load_font(app.render(), *res, "font"_hash, font), "load reference HUD font");
+    }
+    void on_render(App& app, scalar) override {
+        for (size_t i = 0; i < sizeof(kHudCases) / sizeof(kHudCases[0]); ++i) {
+            const HudCase& c = kHudCases[i];
+            const std::string name = "hud" + std::to_string(i);
+            check(flow.go(app, fnv1a_n(name.c_str(), name.size())), "enter HUD fixture level");
+            flow.vars().set("coins"_hash, c.value);
+            flow.behaviours().set_counter("deaths"_hash, c.deaths);
+            flow.render(app);
+            const phx_soft_fb fb = phx_gfx_soft_lock(app.platform()->gfx());
+            const std::vector<uint32_t> actual(fb.pixels, fb.pixels + size_t(fb.w) * fb.h);
+
+            // Independently render the expected strings over the same scene. Comparing the
+            // complete frame catches lost digits, unterminated text and alignment changes.
+            Renderer& r = app.render();
+            const Camera2D cam = flow.behaviours().camera();
+            auto at = [&](int x, int y) { return cam.pos + vec2{ s_from_int(x), s_from_int(y) }; };
+            r.begin_frame(cam);
+            flow.level().draw(r);
+            draw_sprites(app.world(), r);
+            ui.begin(r, app.input());
+            ui.text(at(4, 4), font, c.expected.c_str(), rgba(255, 190, 80));
+            if (c.expected_lives)
+                ui.text(at(fb.w - 4 - UI::text_width(font, c.expected_lives), 4), font,
+                        c.expected_lives, rgba(255, 190, 80));
+            ui.end();
+            r.end_frame();
+            check(std::memcmp(actual.data(), fb.pixels, actual.size() * sizeof(uint32_t)) == 0, name.c_str());
+        }
+    }
+};
 } // namespace
 
 int main() {
@@ -142,6 +231,13 @@ int main() {
     bool ended = false;
     for (uint32_t i = 0; i < g.seen_n; ++i) ended = ended || g.seen[i] == "end"_hash;
     check(ended && g.restarted, "an end screen's START restarts at the first row, totals cleared");
+
+    phx_null_set_button_script(nullptr, 0);
+    phx_null_set_max_frames(1);
+    cfg.width = 512; // Full 39-character counter plus a separate right-aligned lives readout.
+    App hud_app(cfg);
+    static HudGame hud;
+    check(hud_app.run(&hud) == 0, "render all HUD boundary fixtures");
 
     std::printf("flow_test: %d checks, %d failures\n", g_checks, g_fail);
     std::printf(g_fail ? "FLOW FAIL\n\n" : "FLOW PASS\n\n");

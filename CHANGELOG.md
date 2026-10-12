@@ -7,6 +7,11 @@ All notable changes to Phosphorus are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- GameFlow HUD formatting stays within its stack buffers for long labels and extreme counters.
+  Labels truncate at the tail to preserve the complete number; lives subtraction uses wide math.
+
 ### Changed
 
 - Renamed the engine to **Phosphorus Engine** and the editor to **Phosphorus Studio**.

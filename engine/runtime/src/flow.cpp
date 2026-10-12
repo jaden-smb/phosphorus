@@ -12,16 +12,32 @@ namespace phx {
 namespace {
 constexpr Rgba kText = rgba(240, 240, 250), kDim = rgba(170, 170, 190), kAccent = rgba(255, 190, 80);
 
-// The int value `v` as decimal text (no printf on the frame path).
-void int_text(int32_t v, char* out) {
-    char tmp[12];
+// Decimal text, including INT64_MIN (no printf or allocation on the frame path).
+template <size_t N>
+void int_text(int64_t v, char (&out)[N]) {
+    static_assert(N >= 21, "decimal int64 needs 20 characters and a terminator");
+    char tmp[20];
     int n = 0;
-    uint32_t u = v < 0 ? uint32_t(-(v + 1)) + 1u : uint32_t(v);
-    do { tmp[n++] = char('0' + u % 10); u /= 10; } while (u && n < 11);
+    uint64_t u = v < 0 ? uint64_t(-(v + 1)) + 1u : uint64_t(v);
+    do { tmp[n++] = char('0' + u % 10); u /= 10; } while (u);
     int o = 0;
     if (v < 0) out[o++] = '-';
     while (n) out[o++] = tmp[--n];
     out[o] = 0;
+}
+
+// Keep the complete number and separator; truncate only the label's tail, by byte.
+template <size_t N>
+void hud_text(char (&out)[N], const char* label, int64_t value) {
+    static_assert(N >= 22, "HUD needs room for a separator, int64 and terminator");
+    char num[21];
+    int_text(value, num);
+    const size_t digits = std::strlen(num);
+    const size_t label_limit = N - 2 - digits;
+    size_t n = 0;
+    while (n < label_limit && label[n]) { out[n] = label[n]; ++n; }
+    out[n++] = ' ';
+    std::memcpy(out + n, num, digits + 1);
 }
 } // namespace
 
@@ -159,7 +175,7 @@ void GameFlow::text_lines(App& app, const char* s, int y, bool centred) {
     char line[72];
     while (*s) {
         int n = 0;
-        while (s[n] && s[n] != '|' && n < 71) { line[n] = s[n]; ++n; }
+        while (n < 71 && s[n] && s[n] != '|') { line[n] = s[n]; ++n; }
         line[n] = 0;
         const int x = centred ? (w - UI::text_width(font_, line)) / 2 : 4;
         ui_.text(vec2{ cam.pos.x + s_from_int(x), cam.pos.y + s_from_int(y) }, font_, line, kText);
@@ -185,16 +201,11 @@ void GameFlow::render(App& app) {
             // HUD: the counter, and the lives left
             const NameHash cn = table_.get_hash(row_, "counter"_hash);
             const char* label = table_.get_str(row_, "label"_hash);
-            char buf[40], num[12];
-            int_text(total(cn ? cn : NameHash("coins"_hash)), num);
-            std::strcpy(buf, label && *label ? label : "COINS");
-            std::strcat(buf, " ");
-            std::strcat(buf, num);
+            char buf[40];
+            hud_text(buf, label && *label ? label : "COINS", total(cn ? cn : NameHash("coins"_hash)));
             ui_.text(at(4, 4), font_, buf, kAccent);
             if (const int32_t lives = table_.get_int(row_, "lives"_hash, 0)) {
-                int_text(lives - beh_.counter("deaths"_hash), num);
-                std::strcpy(buf, "LIVES ");
-                std::strcat(buf, num);
+                hud_text(buf, "LIVES", int64_t(lives) - beh_.counter("deaths"_hash));
                 ui_.text(at(w - 4 - UI::text_width(font_, buf), 4), font_, buf, kAccent);
             }
             if (ticks_ < 120) text_lines(app, table_.get_str(row_, "text"_hash), h / 3, true);   // the banner

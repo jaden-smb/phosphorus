@@ -9,6 +9,7 @@ CMakeFiles/
 cmake_install.cmake
 Makefile.cmake
 *STATUS.md
+compile_commands.json
 
 # Build artifacts
 *.o

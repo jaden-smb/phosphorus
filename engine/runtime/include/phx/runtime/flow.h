@@ -29,6 +29,8 @@
 // Text uses the font FlowOptions::font (phx/runtime/font.h: a baked `.font`, which may
 // be proportional, or a plain 16-column 8x8 ASCII texture), drawn with phx::UI, so it shows on
 // every target.
+// HUD text holds 39 bytes plus NUL: labels lose trailing bytes as needed to preserve the
+// space and complete decimal counter. Empty / absent labels use "COINS".
 //
 //     flow.start(app, *res);        // on_start, after mounting the bundle
 //     flow.update(app, dt);         // on_fixed_update
