@@ -156,6 +156,7 @@ foreach(spec ppu:gba/gba_ppu gu:gu/gu_backend)
     ${CMAKE_SOURCE_DIR}/engine/platform/src/null/null_platform.cpp
     ${_render_src}/renderer.cpp
     ${_render_src}/${bsrc}.cpp
+    ${_render_src}/texture_cache.cpp
     suites/${tname}_test.cpp)
   target_include_directories(it_${tname} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

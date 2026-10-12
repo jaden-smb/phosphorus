@@ -10,8 +10,8 @@ namespace phx {
 
 namespace {
 // Sort key: layer (high) -> z -> texture, so batches of the same texture stay adjacent.
-inline uint32_t sort_key(const DrawSprite& s) {
-    return (uint32_t(s.layer) << 24) | (uint32_t(s.z) << 16) | uint32_t(s.tex);
+inline uint64_t sort_key(const DrawSprite& s) {
+    return (uint64_t(s.layer) << 40) | (uint64_t(s.z) << 32) | uint64_t(s.tex);
 }
 } // namespace
 
@@ -57,8 +57,7 @@ TextureId Renderer::load_texture(const TextureDesc& d) {
 }
 void Renderer::unload_texture(TextureId id) {
     if (id == kNoTexture) return;
-    be_->free_tex(id);
-    if (live_tex_) --live_tex_;
+    if (be_->free_tex(id) && live_tex_) --live_tex_;
 }
 TilemapId Renderer::upload_tilemap(const TilemapDesc& d){ return be_->upload_map(d); }
 void Renderer::refresh_tilemap(TilemapId id){ be_->invalidate_map(id); }
@@ -111,7 +110,7 @@ PHX_HOT_CODE void Renderer::end_frame() {
     // submission order on every platform or golden frames diverge across toolchains.
     for (uint32_t i = 1; i < count_; ++i) {
         const DrawSprite s   = sprites_[i];
-        const uint32_t   key = sort_key(s);
+        const uint64_t   key = sort_key(s);
         uint32_t j = i;
         for (; j > 0 && sort_key(sprites_[j - 1]) > key; --j) sprites_[j] = sprites_[j - 1];
         sprites_[j] = s;

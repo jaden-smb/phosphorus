@@ -9,6 +9,11 @@ All notable changes to Phosphorus are documented here. The format follows
 
 ### Fixed
 
+- GBA PPU texture tiles and palette slots are reclaimed on destruction; failed uploads roll
+  back palette claims. Retained maps pin their tilesets and repeated level reloads reuse
+  bounded resources. Texture handles are now opaque 32-bit values to reject stale PPU IDs.
+  Level loading reports upload/cache exhaustion and supports eight retained map/tileset pairs.
+
 - GameFlow HUD formatting stays within its stack buffers for long labels and extreme counters.
   Labels truncate at the tail to preserve the complete number; lives subtraction uses wide math.
 

@@ -71,10 +71,11 @@ public:
         return id;
     }
 
-    void free_tex(TextureId id) override {
-        if (id >= tex_count_ || tex_[id].px == nullptr) return;
+    bool free_tex(TextureId id) override {
+        if (id >= tex_count_ || tex_[id].px == nullptr) return false;
         tex_[id].px = nullptr;
         free_[free_n_++] = id;
+        return true;
     }
 
     TilemapId upload_map(const TilemapDesc& d) override {

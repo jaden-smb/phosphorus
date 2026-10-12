@@ -140,14 +140,15 @@ private:
     // Maps this Level has uploaded: loading one again reuses its tilemap slot and tileset texture
     // (renderer tilemap slots are never freed), so a game flow can restart and revisit levels.
     static constexpr uint32_t kMapCache = 8;
-    struct MapCache { NameHash map = 0; TilemapId id = kNoTilemap; TextureId tileset = kNoTexture; };
+    // At most eight distinct (map, tileset) pairs per Level, retained until renderer teardown.
+    // load() returns OutOfMemory on overflow or an upload failure; existing pairs remain revisitable.
+    struct MapCache { NameHash map = 0, texture = 0; TilemapId id = kNoTilemap; TextureId tileset = kNoTexture; };
     MapCache    cache_[kMapCache]{};
     uint32_t    cache_n_ = 0;
 
     TilemapView view_{};
     TilemapId   map_ = kNoTilemap;
     TextureId   tileset_ = kNoTexture;
-    bool        tileset_cached_ = false;
     TileGrid    grid_{};
     TableView   prefabs_{};
     SpawnsView  spawns_{};

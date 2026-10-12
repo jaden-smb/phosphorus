@@ -20,7 +20,7 @@
 // The whole model is fully exercised and verified HEADLESSLY: `ppu_compose`
 // (engine/render/src/gba/ppu_model.h) produces the exact frame the PPU would scan out.
 // On real hardware (PHX_GBA_HW) end() pushes the same data into VRAM/OAM/PALRAM — tiles
-// and palette incrementally (they only grow at load time), windows/OAM/OBJ tiles per
+// and palette incrementally (including reclaimed runs at load time), windows/OAM/OBJ tiles per
 // frame — and the silicon rasterizes it.
 //
 // Exactly one render backend TU is linked; this one defines phx_make_render_backend()
@@ -28,6 +28,7 @@
 #include "backend.h"
 #include "phx/platform/gfx_soft.h"
 #include "ppu_model.h"
+#include <cstring>
 
 #if defined(PHX_GBA_HW)
 #include <stdint.h>
@@ -59,7 +60,12 @@ constexpr uint8_t  kBankNone   = 0xFF;   // TexRec.bank: per-tile banks (BG-only
 // `cols` x `rows` grid (so a sprite/tile source sub-rect maps to a tile rectangle).
 // `bank` is the single palette bank the whole texture indexes, or kBankNone when its
 // colours spilled across per-tile banks (then tile_bank_[] holds each tile's bank).
-struct TexRec { uint16_t base, cols, rows; bool used; uint8_t bank; };
+struct TexRec {
+    uint16_t base = 0, cols = 0, rows = 0;
+    bool used = false, owned = false;
+    uint8_t bank = kBankNone;
+    TextureId handle = 0;
+};
 struct MapRec {
     const uint16_t* idx;
     uint16_t w, h;
@@ -94,7 +100,6 @@ public:
         tile_bank_ = a.alloc_array<uint8_t>(kTileCap);
         obj_tiles_ = a.alloc_array<PpuTile>(kObjTileCap);
         tex_       = a.alloc_array<TexRec>(kMaxTextures);
-        free_      = a.alloc_array<TextureId>(kMaxTextures);
         maps_      = a.alloc_array<MapRec>(kMaxTilemaps);
         for (int s = 0; s < kBgSlots; ++s)
             win_[s] = a.alloc_array<PpuScreenEntry>(kBgWin * kBgWin);
@@ -103,9 +108,11 @@ public:
         scratch_ = a.alloc_array<uint32_t>(kScreenW * kScreenH);   // compose target (host/sw tier)
         if (!scratch_) return false;
 #endif
-        if (!tiles_ || !tile_bank_ || !obj_tiles_ || !tex_ || !free_ || !maps_ || !oam_) return false;
+        if (!tiles_ || !tile_bank_ || !obj_tiles_ || !tex_ || !maps_ || !oam_) return false;
         for (int s = 0; s < kBgSlots; ++s)
             if (!win_[s]) return false;
+
+        for (uint16_t i = 0; i < kMaxTextures; ++i) tex_[i] = TexRec{};
 
         // Tile 0 is the reserved fully-transparent tile (BG "empty" cells point here).
         for (auto& r : tiles_[0].row) r = 0;
@@ -133,7 +140,23 @@ public:
     //     claims a palette bank per baked palette and remaps nibbles through a 16-entry LUT.
     //   · RGBA8 (tests, tier-2 bundles, un-bakeable art): the full upload-time quantizer.
     //     Both paths produce the same composed frame for the same source art.
+    // Palette mutations are transactional. Tiles are written only into a free run and
+    // become live on commit, so a failed encode needs no tile rollback.
     TextureId upload_tex(const TextureDesc& d) override {
+        uint16_t saved_palette[kPalTotal], saved_used[kPalBanks];
+        std::memcpy(saved_palette, palette_, sizeof(palette_));
+        std::memcpy(saved_used, bank_used_, sizeof(bank_used_));
+        const uint32_t stamp = pal_stamp_;
+        const TextureId id = upload_impl(d);
+        if (id == kNoTexture) {
+            std::memcpy(palette_, saved_palette, sizeof(palette_));
+            std::memcpy(bank_used_, saved_used, sizeof(bank_used_));
+            pal_stamp_ = stamp;
+        }
+        return id;
+    }
+
+    TextureId upload_impl(const TextureDesc& d) {
         if (!d.pixels || d.width == 0 || d.height == 0)       return kNoTexture;
         if ((d.width % kTile) || (d.height % kTile))          return kNoTexture;  // tile-align
         if (d.format == PixelFormat::PAL4_TILES)              return upload_pal4(d);
@@ -141,7 +164,9 @@ public:
         const uint16_t cols = uint16_t(d.width  / kTile);
         const uint16_t rows = uint16_t(d.height / kTile);
         const uint32_t need = uint32_t(cols) * rows;
-        if (tile_count_ + need > kTileCap)                    return kNoTexture;  // char store full
+        const uint16_t base = find_run(need);
+        const int slot = find_slot();
+        if (base == 0 || slot < 0) return kNoTexture;
 
         const uint32_t* src = static_cast<const uint32_t*>(d.pixels);
 
@@ -166,7 +191,6 @@ public:
         }
 
         // Pass 2: encode each 8×8 tile (per-tile bank claim when the texture spilled).
-        const uint16_t base = tile_count_;
         for (uint16_t tr = 0; tr < rows; ++tr) {
             for (uint16_t tc = 0; tc < cols; ++tc) {
                 PpuTile& t = tiles_[base + tr * cols + tc];
@@ -198,21 +222,20 @@ public:
                 tile_bank_[base + tr * cols + tc] = uint8_t(bank);
             }
         }
-        tile_count_ += uint16_t(need);
-
-        TextureId id;
-        if (free_n_ > 0)                    id = free_[--free_n_];
-        else if (tex_n_ < kMaxTextures)    id = tex_n_++;
-        else                               return kNoTexture;
-        tex_[id] = TexRec{ base, cols, rows, true,
-                           tex_bank >= 0 ? uint8_t(tex_bank) : kBankNone };
-        return id;
+        return commit(slot, base, cols, rows, tex_bank >= 0 ? uint8_t(tex_bank) : kBankNone);
     }
 
-    void free_tex(TextureId id) override {
-        if (id >= tex_n_ || !tex_[id].used) return;  // out of range / double free
-        tex_[id].used = false;                       // (tiles are not reclaimed; ids are)
-        free_[free_n_++] = id;
+    bool free_tex(TextureId id) override {
+        TexRec* t = texture(id);
+        if (!t || !t->owned) return false;
+        t->owned = false;
+        // Maps belong to the renderer until its arena is destroyed. Pin their tilesets:
+        // releasing the uploader's ownership must never leave a map pointing at reused tiles.
+        for (uint16_t m = 0; m < map_n_; ++m)
+            if (maps_[m].tileset == id) return false;
+        t->used = false;
+        reclaim_palette();
+        return true;
     }
 
     // The PAL4_TILES fast path: the bake already ran this backend's quantizer offline
@@ -222,12 +245,17 @@ public:
         // Blob payloads are 8-aligned (16-aligned blob start + the 8-byte blob header), so
         // header/palette casts are safe on ARM; the tile words are 4-aligned by the format.
         const uint8_t* pay = static_cast<const uint8_t*>(d.pixels);
+        if (d.size && d.size < sizeof(TexturePal4Header)) return kNoTexture;
         const TexturePal4Header& ph = *reinterpret_cast<const TexturePal4Header*>(pay);
         const uint16_t cols = uint16_t(d.width  / kTile);
         const uint16_t rows = uint16_t(d.height / kTile);
         const uint32_t need = uint32_t(cols) * rows;
         if (ph.pal_count == 0 || ph.pal_count > kPalBanks)    return kNoTexture;
-        if (tile_count_ + need > kTileCap)                    return kNoTexture;  // char store full
+        const uint16_t base = find_run(need);
+        const int slot = find_slot();
+        if (base == 0 || slot < 0) return kNoTexture;
+
+        if (d.size && d.size < pal4_payload_size(ph.pal_count, need)) return kNoTexture;
 
         const uint16_t* pals  = reinterpret_cast<const uint16_t*>(pay + pal4_palettes_off());
         const uint8_t*  used  = pay + pal4_pal_used_off(ph.pal_count);
@@ -240,7 +268,8 @@ public:
         uint8_t gbank[kPalBanks];
         uint8_t lut[kPalBanks][kPalSize] = {};
         for (uint16_t p = 0; p < ph.pal_count; ++p) {
-            const int n = used[p] <= kPalSize - 1 ? used[p] : kPalSize - 1;
+            if (used[p] > kPalSize - 1) return kNoTexture;
+            const int n = used[p];
             uint16_t colors[kPalSize - 1];
             for (int k = 0; k < n; ++k) colors[k] = pals[p * kPalSize + 1 + k];
             const int b = claim_bank(colors, n);
@@ -249,7 +278,6 @@ public:
             for (int s = 1; s <= n; ++s) lut[p][s] = bank_slot(uint8_t(b), pals[p * kPalSize + s]);
         }
 
-        const uint16_t base = tile_count_;
         for (uint32_t t = 0; t < need; ++t) {
             const uint8_t p = tpal[t];
             if (p >= ph.pal_count) return kNoTexture;         // malformed payload
@@ -257,26 +285,26 @@ public:
             for (int r = 0; r < kTile; ++r) {
                 const uint32_t in = tdata[t * 8 + r];
                 uint32_t out = 0;
-                for (int x = 0; x < kTile; ++x)
-                    out |= uint32_t(lut[p][(in >> (x * 4)) & 0xF]) << (x * 4);
+                for (int x = 0; x < kTile; ++x) {
+                    const uint8_t index = uint8_t((in >> (x * 4)) & 0xF);
+                    if (index > used[p]) return kNoTexture;
+                    out |= uint32_t(lut[p][index]) << (x * 4);
+                }
                 tile.row[r] = out;
             }
             tile_bank_[base + t] = gbank[p];
         }
-        tile_count_ = uint16_t(tile_count_ + need);
-
-        TextureId id;
-        if (free_n_ > 0)                    id = free_[--free_n_];
-        else if (tex_n_ < kMaxTextures)     id = tex_n_++;
-        else                                return kNoTexture;
-        // A single baked palette = one bank for the whole texture (OBJ-usable, like the
-        // RGBA8 path's one-bank case); several palettes = per-tile banks (BG-only).
-        tex_[id] = TexRec{ base, cols, rows, true,
-                           ph.pal_count == 1 ? gbank[0] : kBankNone };
-        return id;
+        return commit(slot, base, cols, rows, ph.pal_count == 1 ? gbank[0] : kBankNone);
     }
 
     TilemapId upload_map(const TilemapDesc& d) override {
+        if (!d.indices || !d.width || !d.height || !d.layers || !texture(d.tileset)) return kNoTilemap;
+        // Identical retained map descriptors share one slot.
+        for (uint16_t m = 0; m < map_n_; ++m) {
+            const MapRec& r = maps_[m];
+            if (r.idx == d.indices && r.w == d.width && r.h == d.height && r.layers == d.layers &&
+                r.tw == d.tile_w && r.th == d.tile_h && r.tileset == d.tileset) return m;
+        }
         if (map_n_ >= kMaxTilemaps) return kNoTilemap;
         TilemapId id = map_n_++;
         maps_[id] = MapRec{ d.indices, d.width, d.height, d.layers, d.tile_w, d.tile_h,
@@ -325,9 +353,10 @@ public:
         if (id >= map_n_) return;
         const MapRec& m = maps_[id];
         if (layer >= m.layers || m.tw != kTile || m.th != kTile) return;
-        if (m.tileset >= tex_n_ || !tex_[m.tileset].used)        return;
+        const TexRec* texture_rec = texture(m.tileset);
+        if (!texture_rec) return;
         if (slot_n_ >= kBgSlots)                                 return;
-        const TexRec& ts = tex_[m.tileset];
+        const TexRec& ts = *texture_rec;
         const uint16_t* cells = m.idx + size_t(layer) * size_t(m.w) * size_t(m.h);
         const int slot = slot_n_++;
         PpuScreenEntry* win = win_[slot];
@@ -450,10 +479,11 @@ public:
     void submit_sprites(const DrawSprite* s, uint32_t n) override {
         for (uint32_t i = 0; i < n; ++i) {
             const DrawSprite& d = s[i];
-            if (d.tex >= tex_n_ || !tex_[d.tex].used)        continue;
+            const TexRec* texture_rec = texture(d.tex);
+            if (!texture_rec) continue;
             if ((d.sw % kTile) || (d.sh % kTile) || d.sw <= 0 || d.sh <= 0) continue;
             if ((d.sx % kTile) || (d.sy % kTile) || d.sx < 0 || d.sy < 0)   continue;
-            const TexRec& t = tex_[d.tex];
+            const TexRec& t = *texture_rec;
             const uint8_t wt = uint8_t(d.sw / kTile), ht = uint8_t(d.sh / kTile);
             uint16_t shape, size;
             if (!obj_shape_size(wt, ht, shape, size))        continue;  // no such OBJ shape
@@ -643,6 +673,67 @@ private:
     }
 #endif // PHX_GBA_HW
 
+    TexRec* texture(TextureId id) {
+        if (id == kNoTexture) return nullptr;
+        TexRec& t = tex_[id & 255u];
+        return t.used && t.handle == id ? &t : nullptr;
+    }
+
+    int find_slot() const {
+        for (int i = 0; i < kMaxTextures; ++i)
+            // Never wrap a generation: retire a slot after 16M uses rather than alias.
+            if (!tex_[i].used && (tex_[i].handle >> 8) < 0xFFFFFEu) return i;
+        return -1;
+    }
+
+    uint16_t find_run(uint32_t need) const {
+        if (!need || need >= kTileCap) return 0;
+        uint32_t base = 1;
+        for (;;) {
+            if (base + need > kTileCap) return 0;
+            bool overlap = false;
+            for (int i = 0; i < kMaxTextures; ++i) {
+                const TexRec& t = tex_[i];
+                const uint32_t end = t.base + uint32_t(t.cols) * t.rows;
+                if (t.used && base < end && base + need > t.base) {
+                    base = end; overlap = true; break;
+                }
+            }
+            if (!overlap) return uint16_t(base);
+        }
+    }
+
+    TextureId commit(int slot, uint16_t base, uint16_t cols, uint16_t rows, uint8_t bank) {
+        TexRec& t = tex_[slot];
+        const TextureId id = (((t.handle >> 8) + 1u) << 8) | uint32_t(slot);
+        t = TexRec{base, cols, rows, true, true, bank, id};
+        const uint16_t end = uint16_t(base + uint32_t(cols) * rows);
+        if (end > tile_count_) tile_count_ = end;
+#if defined(PHX_GBA_HW)
+        // Reused runs must reach VRAM too, not just the host compositor.
+        if (base < tiles_pushed_) tiles_pushed_ = base;
+#endif
+        // Reusing a base can change tile palette banks even at identical map/camera pointers.
+        for (int s = 0; s < kBgSlots; ++s) win_cells_[s] = nullptr;
+        return id;
+    }
+
+    void reclaim_palette() {
+        for (auto& mask : bank_used_) mask = 0;
+        // Rebuild usage from live packed texels, preserving every live bank/slot index.
+        // Bounded load-time work (at most 511 tiles); no moving colours under live textures.
+        for (int i = 0; i < kMaxTextures; ++i) {
+            const TexRec& t = tex_[i];
+            if (!t.used) continue;
+            for (uint32_t n = t.base; n < t.base + uint32_t(t.cols) * t.rows; ++n)
+                for (uint32_t row : tiles_[n].row)
+                    for (int x = 0; x < kTile; ++x) {
+                        const uint8_t index = uint8_t((row >> (x * 4)) & 15u);
+                        if (index) bank_used_[tile_bank_[n]] |= uint16_t(1u << index);
+                    }
+        }
+    }
+
     // Claim a palette bank able to hold all `n` colours (absorbing the missing ones), or -1
     // when every bank is full — the honest 16×15-colour ceiling. Greedy first fit keeps
     // similar textures sharing banks.
@@ -651,16 +742,24 @@ private:
             int missing = 0;
             for (int k = 0; k < n; ++k) {
                 bool found = false;
-                for (int s = 1; s <= bank_n_[b]; ++s)
-                    if (palette_[b * kPalSize + s] == cols[k]) { found = true; break; }
+                for (int s = 1; s < kPalSize; ++s)
+                    if ((bank_used_[b] & (1u << s)) && palette_[b * kPalSize + s] == cols[k]) { found = true; break; }
                 if (!found) ++missing;
             }
-            if (bank_n_[b] + missing > kPalSize - 1) continue;
+            int available = 0;
+            for (int s = 1; s < kPalSize; ++s) if (!(bank_used_[b] & (1u << s))) ++available;
+            if (missing > available) continue;
             for (int k = 0; k < n; ++k) {                       // absorb the missing colours
                 bool found = false;
-                for (int s = 1; s <= bank_n_[b]; ++s)
-                    if (palette_[b * kPalSize + s] == cols[k]) { found = true; break; }
-                if (!found) { palette_[b * kPalSize + (++bank_n_[b])] = cols[k]; ++pal_stamp_; }
+                for (int s = 1; s < kPalSize; ++s)
+                    if ((bank_used_[b] & (1u << s)) && palette_[b * kPalSize + s] == cols[k]) { found = true; break; }
+                if (!found) {
+                    int s = 1;
+                    while (bank_used_[b] & (1u << s)) ++s;
+                    bank_used_[b] |= uint16_t(1u << s);
+                    palette_[b * kPalSize + s] = cols[k];
+                    ++pal_stamp_;
+                }
             }
             return b;
         }
@@ -669,8 +768,8 @@ private:
 
     // Slot of `c` within bank `b` (1..15). Colours were interned by claim_bank, so this hits.
     uint8_t bank_slot(uint8_t b, uint16_t c) const {
-        for (int s = 1; s <= bank_n_[b]; ++s)
-            if (palette_[b * kPalSize + s] == c) return uint8_t(s);
+        for (int s = 1; s < kPalSize; ++s)
+            if ((bank_used_[b] & (1u << s)) && palette_[b * kPalSize + s] == c) return uint8_t(s);
         return 0;   // unreachable for interned colours; 0 keeps it visibly transparent
     }
 
@@ -679,10 +778,9 @@ private:
     uint8_t*   tile_bank_ = nullptr;
     PpuTile*   obj_tiles_ = nullptr;  uint16_t obj_tile_n_ = 0;
     uint16_t   palette_[kPalTotal] = {};
-    uint8_t    bank_n_[kPalBanks]  = {};   // colours interned per bank (excluding slot 0)
+    uint16_t   bank_used_[kPalBanks] = {};   // colours interned per bank (excluding slot 0)
     uint32_t   pal_stamp_ = 1;             // bumped on every interned colour (dirty tracking)
-    TexRec*    tex_  = nullptr;   uint16_t tex_n_  = 0;
-    TextureId* free_ = nullptr;   uint16_t free_n_ = 0;
+    TexRec*    tex_  = nullptr;
     MapRec*    maps_ = nullptr;   uint16_t map_n_  = 0;
     bool       map_dirty_[kMaxTilemaps] = {};   // set by invalidate_map(): force a window re-stream
     PpuScreenEntry* win_[kBgSlots] = {};

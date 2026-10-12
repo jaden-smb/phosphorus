@@ -74,6 +74,8 @@ bool bake() {
     d.set_prop(2, "collide", "bool", "false");               // ...and explicitly no collider
     if (!d.save_file("build/l_level.tmj")) return false;
     phxtool::BundleWriter w(2);
+    for (const char* name : {"visit0", "visit1", "visit2", "visit3", "visit4", "visit5", "visit6", "visit7"})
+        if (!phxtool::build_tmj(w, "build/l_level.tmj", name)) return false;
     return phxtool::build_sprite(w, "build/l_hero.sprdef", "hero") && phxtool::build_png(w, "build/l_tiles.png", "tiles") &&
            phxtool::build_tmj(w, "build/l_level.tmj", "level") && phxtool::build_bin(w, "build/l_prefabs.json", "prefabs") &&
            w.write("build/l_level.phxp");
@@ -174,6 +176,45 @@ struct LevelGame final : Game {
         const uint32_t before = w.count();
         level.unload(app);
         check(before == 3 && w.count() == 0 && !level.loaded(), "unload despawns the level's entities");
+        Renderer& r = app.render();
+        const uint16_t resident = r.live_textures();
+        LevelOptions bad{}; bad.tileset = "missing"_hash;
+        check(level.load(app, *res, &physics, bad) == Status::OutOfMemory && !level.loaded() &&
+              r.live_textures() == resident && w.count() == 0, "failed tileset upload leaves no map or texture ownership");
+        check(level.load(app, *res, &physics) == Status::Ok &&
+              level.load(app, *res, &physics) == Status::Ok && w.count() == 3,
+              "load on a loaded Level replaces entities and releases old sprite ownership");
+        level.unload(app);
+        static const NameHash maps[] = {"visit0"_hash, "visit1"_hash, "visit2"_hash, "visit3"_hash,
+                                       "visit4"_hash, "visit5"_hash, "visit6"_hash, "visit7"_hash};
+        LevelOptions opt{}; opt.prefabs = 0;   // test retained-map capacity without sprite uploads
+        bool supported = true;
+        for (int i = 0; i < 7; ++i) {
+            opt.map = maps[i];
+            supported = supported && level.load(app, *res, &physics, opt) == Status::Ok;
+            level.unload(app);
+        }
+        check(supported, "eight supported map pairs are retained for revisits");
+        const uint16_t eight = r.live_textures();
+        opt.map = maps[7];
+        check(level.load(app, *res, &physics, opt) == Status::OutOfMemory && !level.loaded() &&
+              r.live_textures() == eight && w.count() == 0, "cache overflow fails before any resource allocation");
+        opt.map = maps[0];
+        check(level.load(app, *res, &physics, opt) == Status::Ok, "supported cached map remains revisitable after overflow");
+        level.unload(app);
+        TilemapDesc md{};   // fill the backend's remaining retained slots
+        static uint16_t cell = 0;
+        md.indices = &cell; md.width = md.height = 1;
+        // Use a real live tileset (soft backend accepts empty too, PPU requires live).
+        TextureDesc td{}; static uint32_t texels[64] = {};
+        td.pixels = texels; td.width = td.height = 8;
+        md.tileset = r.load_texture(td);
+        for (int i = 0; i < 32; ++i) r.upload_tilemap(md);
+        const uint16_t before_fail = r.live_textures();
+        Level other;
+        check(other.load(app, *res, &physics, opt) == Status::OutOfMemory && !other.loaded() &&
+              r.live_textures() == before_fail, "backend map exhaustion reclaims its failed Level tileset upload");
+
     }
 };
 } // namespace

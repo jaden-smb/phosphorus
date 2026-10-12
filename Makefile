@@ -503,7 +503,7 @@ RENDER_OBJ := $(patsubst %.cpp,$(HOSTOBJ)/%.o,$(RENDER_SRC))
 # for the GBA-native PPU backend (quantize -> 4bpp tiles + OAM -> ppu_compose). It proves
 # the GBA hardware render model headlessly (palette/alignment/sprite-ceiling limits + all).
 PPU_SRC := $(patsubst engine/render/src/soft/soft_renderer.cpp,engine/render/src/gba/gba_ppu.cpp,\
-             $(patsubst tests/suites/render_test.cpp,tests/suites/ppu_test.cpp,$(RENDER_SRC)))
+             $(patsubst tests/suites/render_test.cpp,tests/suites/ppu_test.cpp,$(RENDER_SRC))) engine/render/src/texture_cache.cpp
 PPU_OBJ := $(patsubst %.cpp,$(HOSTOBJ)/%.o,$(PPU_SRC))
 
 # The GU smoke: the SAME front end + null platform, swapping in the PSP-native GU backend
@@ -1441,6 +1441,7 @@ project-check: $(PHXNEW) $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) $(PHXPACK)
 	@for t in 2 0 1; do $(MAKE) -s --no-print-directory game-assets PROJECT=$(PROJCHECK_DIR) TIER=$$t >/dev/null || exit 1; done
 	@$(MAKE) -s --no-print-directory project-run PROJECT=$(PROJCHECK_DIR) PROFILE=desktop BUNDLE=phxp
 	@$(MAKE) -s --no-print-directory project-run PROJECT=$(PROJCHECK_DIR) PROFILE=gba BUNDLE=t0.phxp TIER=gba_sim GAME_RENDER=ppu
+	@$(MAKE) -s --no-print-directory project-run PROJECT=$(PROJCHECK_DIR) PROFILE=gba BUNDLE=t0.phxp TIER=gba_sim GAME_RENDER=ppu RELOAD_STRESS=1
 	@$(MAKE) -s --no-print-directory project-run PROJECT=$(PROJCHECK_DIR) PROFILE=psp BUNDLE=t1.phxp
 	@$(MAKE) -s --no-print-directory project-schema PROJECT=$(PROJCHECK_DIR)
 	@echo "PROJECT PASS"
@@ -1468,12 +1469,13 @@ project-run: game-console-check $(PROJRUN_OBJ)
 	@$(CXX) $(CXXFLAGS) $(PUBLIC_INCLUDES) -I"$(GAME_DIR)/src" -I"$(GAME_OUT)/gen" $(GAME_SRC) $(PROJRUN_OBJ) \
 	  -o "$(PROJRUN_DIR)/game"
 	@cp "$(GAME_OUT)/$(GAME_NAME).$(BUNDLE)" "$(PROJRUN_DIR)/build/$(GAME_NAME).phxp"
-	@cd "$(PROJRUN_DIR)" && PHX_MAX_FRAMES=$(PROJCHECK_FRAMES) PHX_PROFILE=$(PROFILE) \
+	@cd "$(PROJRUN_DIR)" && PHX_MAX_FRAMES=$(PROJCHECK_FRAMES) PHX_PROFILE=$(PROFILE) $(if $(RELOAD_STRESS),PHX_RELOAD_BUNDLE="build/$(GAME_NAME).phxp") \
 	  $(if $(BUDGET_REPORT),PHX_BUDGET_REPORT="$(BUDGET_REPORT)" PHX_BUDGET_FRAMES=$(PROJCHECK_FRAMES),PHX_EXPECT_AUDIO=1) \
 	  ./game > run.log 2>&1; \
 	  rc=$$?; if [ $$rc -ne 0 ] || { [ -z "$(BUDGET_REPORT)" ] && grep -qE '\]\[(ERROR|WARN)' run.log; }; then \
 	    cat run.log; echo "  FAIL $(GAME_NAME) on the $(PROFILE) profile (exit $$rc)"; exit 1; fi
-	@echo "  ok   $(GAME_NAME): $(PROJCHECK_FRAMES) frames on the $(PROFILE) profile ($(TIER), $(GAME_RENDER), .$(BUNDLE))"
+	@$(if $(RELOAD_STRESS),grep "reload stress:" "$(PROJRUN_DIR)/run.log",true)
+	@echo "  ok   $(GAME_NAME): $(if $(RELOAD_STRESS),1000 reload/revisit cycles,$(PROJCHECK_FRAMES) frames) on the $(PROFILE) profile ($(TIER), $(GAME_RENDER), .$(BUNDLE))"
 
 # A project, EXPORTED for players: a folder + zip under <project>/dist/ that runs without the engine
 # (tools/common/export_project.py).

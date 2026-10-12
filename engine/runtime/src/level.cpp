@@ -72,27 +72,34 @@ const Level::SpriteSlot* Level::sprite(ResourceCache& res, Renderer& r, NameHash
 Status Level::load(App& app, ResourceCache& res, PhysicsWorld* physics, const LevelOptions& opt) {
     auto tm = res.tilemap(opt.map);
     if (!tm) { PHX_LOG_ERROR("level: no tilemap %08x in the mounted bundles", unsigned(opt.map)); return Status::NotFound; }
+    if (loaded()) unload(app);
+    if (physics) physics->set_tilemap(TileGrid{});
     Renderer& r = app.render();
     ecs::World& w = app.world();
     view_ = tm.unwrap();
 
     // The map: backdrops first, the gameplay layer last; parallax as authored. A map this Level
     // uploaded before reuses its slot and tileset (the cache), so revisiting a level costs none.
-    const NameHash key = opt.map ^ (opt.tileset * kFnvPrime);
-    tileset_cached_ = false;
+    const NameHash texture_name = opt.tileset ? opt.tileset : view_.tileset;
     map_ = kNoTilemap;
     for (uint32_t i = 0; i < cache_n_; ++i)
-        if (cache_[i].map == key) { map_ = cache_[i].id; tileset_ = cache_[i].tileset; tileset_cached_ = true; }
+        if (cache_[i].map == opt.map && cache_[i].texture == texture_name) { map_ = cache_[i].id; tileset_ = cache_[i].tileset; }
     if (map_ == kNoTilemap) {
-        tileset_ = upload(res, r, opt.tileset ? opt.tileset : view_.tileset);
+        // Retained maps are renderer-owned for its arena lifetime. Bound the supported
+        // revisit set before allocating anything; never leave an uncached map with freed tiles.
+        if (cache_n_ == kMapCache) { view_ = TilemapView{}; return Status::OutOfMemory; }
+        tileset_ = upload(res, r, texture_name);
+        if (tileset_ == kNoTexture) { view_ = TilemapView{}; return Status::OutOfMemory; }
         TilemapDesc d{};
         d.indices = view_.indices; d.width = view_.width; d.height = view_.height; d.layers = view_.layers;
         d.tile_w = view_.tile_w; d.tile_h = view_.tile_h; d.tileset = tileset_;
         map_ = r.upload_tilemap(d);
-        if (map_ != kNoTilemap && cache_n_ < kMapCache) {
-            cache_[cache_n_++] = MapCache{ key, map_, tileset_ };
-            tileset_cached_ = true;
+        if (map_ == kNoTilemap) {
+            r.unload_texture(tileset_);
+            tileset_ = kNoTexture; view_ = TilemapView{};
+            return Status::OutOfMemory;
         }
+        cache_[cache_n_++] = MapCache{ opt.map, texture_name, map_, tileset_ };
     }
     if (view_.parallax_q16)
         for (uint8_t l = 0; l < view_.layers; ++l)
@@ -154,6 +161,10 @@ Status Level::load(App& app, ResourceCache& res, PhysicsWorld* physics, const Le
                         AnimationSystem::apply_rect(an);
                         w.add<Animator>(e, an);
                     }
+                } else {
+                    unload(app);
+                    if (physics) physics->set_tilemap(TileGrid{});
+                    return Status::OutOfMemory;
                 }
             }
             fw = clampi(get_int(ref, "w"_hash, fw), 0, 4096);
@@ -182,7 +193,6 @@ void Level::unload(App& app) {
     w.flush_deferred();
     for (uint32_t i = 0; i < sprite_count_; ++i)
         if (sprites_[i].tex != kNoTexture) app.render().unload_texture(sprites_[i].tex);
-    if (tileset_ != kNoTexture && !tileset_cached_) app.render().unload_texture(tileset_);   // a cached one stays
     if (level_detail::g_active == this) level_detail::g_active = nullptr;
     sprite_count_ = 0; spawned_ = 0; tileset_ = kNoTexture; map_ = kNoTilemap;
     view_ = TilemapView{}; grid_ = TileGrid{}; prefabs_ = TableView{}; spawns_ = SpawnsView{};

@@ -93,10 +93,11 @@ public:
         return id;
     }
 
-    void free_tex(TextureId id) override {
-        if (id >= tex_count_ || tex_[id].data == nullptr) return; // out of range / double free
+    bool free_tex(TextureId id) override {
+        if (id >= tex_count_ || tex_[id].data == nullptr) return false; // out of range / double free
         tex_[id].data = nullptr;                                  // mark slot empty
         free_[free_n_++] = id;                                    // recycle the id
+        return true;
     }
 
     TilemapId upload_map(const TilemapDesc& d) override {

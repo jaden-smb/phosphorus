@@ -15,9 +15,10 @@ struct phx_gfx; // opaque platform graphics device
 
 namespace phx {
 
-using TextureId = uint16_t;
+// Opaque texture handle; the PPU uses slot + generation to reject stale references.
+using TextureId = uint32_t;
 using TilemapId = uint16_t;
-constexpr TextureId kNoTexture = 0xFFFF;
+constexpr TextureId kNoTexture = 0xFFFFFFFFu;
 constexpr TilemapId kNoTilemap = 0xFFFF;
 
 enum SpriteFlags : uint16_t {
@@ -89,7 +90,8 @@ public:
 
     void begin_frame(const Camera2D&);
 
-    // Tilemaps: retained handle uploaded once; scrolling is cheap (free on GBA).
+    // Tilemaps: retained for the renderer arena lifetime; caller keeps indices alive.
+    // On the PPU, maps pin their tilesets even after unload_texture(). Scrolling is cheap.
     TilemapId upload_tilemap(const TilemapDesc&);
     void      set_tilemap_scroll(TilemapId, vec2 px);
     // Parallax: layer `layer` of this map scrolls at `factor` × the camera, per axis.
@@ -111,10 +113,11 @@ public:
     void      end_frame();            // sort -> backend submit -> present
 
     TextureId load_texture(const TextureDesc&);
-    // Release a texture slot (the backend frees the GPU resource and recycles the id). Used
-    // by the budget-bounded TextureCache to evict; safe to call with kNoTexture.
+    // Release uploader ownership. The PPU reclaims tiles and unused palette slots unless
+    // a retained map pins this texture. PPU stale handles and double releases are no-ops;
+    // kNoTexture is safe on every backend. TextureId is opaque: never index storage with it.
     void      unload_texture(TextureId);
-    uint16_t  live_textures() const { return live_tex_; }   // outstanding uploaded textures
+    uint16_t  live_textures() const { return live_tex_; }   // live backend resources (including PPU map pins)
     const RenderStats& stats() const { return stats_; }
     const Camera2D&    camera() const { return cam_; }   // the camera of the last begin_frame
 

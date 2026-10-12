@@ -15,7 +15,7 @@ struct IRenderBackend {
     virtual ~IRenderBackend() = default;
 
     virtual TextureId upload_tex(const TextureDesc&)   = 0;
-    virtual void      free_tex(TextureId)              = 0;   // release + recycle the slot
+    virtual bool      free_tex(TextureId)              = 0;   // true only when a live resource was released
     virtual TilemapId upload_map(const TilemapDesc&)   = 0;
     virtual void      set_scroll(TilemapId, vec2 px)   = 0;
     // Mark a retained map's cells as changed since upload. Backends that read the caller's index

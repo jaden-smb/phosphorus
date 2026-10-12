@@ -77,11 +77,12 @@ public:
         return tid;
     }
 
-    void free_tex(TextureId tid) override {
-        if (tid >= tex_count_ || tex_[tid].id == 0) return;    // out of range / double free
+    bool free_tex(TextureId tid) override {
+        if (tid >= tex_count_ || tex_[tid].id == 0) return false;    // out of range / double free
         glDeleteTextures(1, &tex_[tid].id);
         tex_[tid].id = 0;                                      // mark slot empty
         free_[free_n_++] = tid;                                // recycle the id
+        return true;
     }
 
     TilemapId upload_map(const TilemapDesc& d) override {

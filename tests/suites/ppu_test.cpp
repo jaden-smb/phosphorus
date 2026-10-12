@@ -11,6 +11,7 @@
 #include "phx/platform/platform.h"
 #include "phx/platform/gfx_soft.h"
 #include "phx/render/renderer.h"
+#include "phx/render/texture_cache.h"
 #include "phx/core/caps.h"
 #include "ppu_model.h"          // internal PPU model (added to -I by the Makefile target)
 #include "tex_encode.h"         // the tier-0 bake encoder (tools/phxpack; host-only test)
@@ -479,6 +480,140 @@ int main() {
             }
         check(frames_same, "soak: incremental stream composes the EXACT full-re-stream frame");
         check(stats_same,  "soak: incremental tiles_drawn accounting stays exact");
+    }
+
+    // Lifecycle soak: a retained BG pins its tileset; transient sprite runs and palette
+    // slots are reclaimed. Exercise both encodings, 1000 changing palettes, stale/double
+    // frees, exact frame stability of the live BG and failed-upload rollback.
+    {
+        Renderer* rp = Renderer::create(plat->gfx(), arena, caps()).unwrap();
+        static uint32_t blue[64];
+        for (auto& p : blue) p = kBlue;
+        TextureDesc bd{}; bd.pixels = blue; bd.width = bd.height = 8;
+        const TextureId pinned = rp->load_texture(bd);
+        static uint16_t cell = 1;
+        TilemapDesc md{}; md.indices = &cell; md.width = md.height = 1; md.tileset = pinned;
+        const TilemapId mp = rp->upload_tilemap(md);
+        check(rp->upload_tilemap(md) == mp, "identical retained map reuses its slot");
+        rp->unload_texture(pinned);
+        check(rp->live_textures() == 1, "renderer-owned map pins its tileset after owner release");
+
+        static uint32_t pixels[64 * 64];
+        TextureId stale = kNoTexture;
+        bool uploads = true, frames = true, handles = true, bounded = true;
+        for (int cycle = 0; cycle < 1000; ++cycle) {
+            const Rgba color = bgr555_to_rgba8(uint16_t(1 + cycle % 32767));
+            for (auto& p : pixels) p = color;
+            std::vector<uint8_t> encoded;
+            TextureDesc td{}; td.width = td.height = 64; td.pixels = pixels;
+            if (cycle & 1) {
+                phxtool::pal4_encode(pixels, 64, 64, encoded);
+                td.pixels = encoded.data(); td.size = uint32_t(encoded.size()); td.format = PixelFormat::PAL4_TILES;
+            }
+            const TextureId id = rp->load_texture(td);
+            if (id == kNoTexture) { uploads = false; break; }
+            if (stale != kNoTexture) {
+                handles = handles && stale != id;
+                rp->unload_texture(stale);
+            }
+            bounded = bounded && rp->live_textures() == 2;
+            rp->begin_frame(cam);
+            rp->draw_tilemap(mp, 0);
+            DrawSprite ds{}; ds.tex = id; ds.sw = ds.sh = 8;
+            ds.pos = vec2{s_from_int(16), s_from_int(0)};
+            rp->draw_sprite(ds);
+            ds.tex = stale; ds.pos.x = s_from_int(32); rp->draw_sprite(ds);
+            rp->end_frame();
+            const phx_soft_fb fb = phx_gfx_soft_lock(plat->gfx());
+            frames = frames && fb.pixels[3 * FBW + 3] == kBlue && fb.pixels[3 * FBW + 19] == color
+                            && fb.pixels[3 * FBW + 35] == kBack;
+            rp->unload_texture(id); rp->unload_texture(id);
+            stale = id;
+            bounded = bounded && rp->live_textures() == 1;
+        }
+        check(uploads, "1000 RGBA8/PAL4 allocate/free cycles without tile or palette exhaustion");
+        check(frames, "1000 cycles preserve live BG, current OBJ and reject stale OBJ handles");
+        check(handles && bounded, "stale/double frees preserve live resources and exact accounting");
+
+        // A valid first tile claims a fresh full bank before a malformed second tile fails.
+        // Vary that first palette: a leak would fill all banks after sixteen failures.
+        bool rollback = true;
+        static uint32_t bad[16 * 8];
+        for (int trial = 0; trial < 1000; ++trial) {
+            for (int y = 0; y < 8; ++y)
+                for (int x = 0; x < 16; ++x)
+                    bad[y * 16 + x] = rgba(uint8_t((1 + (y * 8 + (x & 7)) % (x < 8 ? 15 : 16)) * 8),
+                                           uint8_t((trial % 32) * 8), uint8_t(x < 8 ? 8 : 16));
+            TextureDesc td{}; td.pixels = bad; td.width = 16; td.height = 8;
+            rollback = rollback && rp->load_texture(td) == kNoTexture;
+            // Also fail PAL4 after its bank was claimed (invalid second tile palette).
+            std::vector<uint8_t> enc;
+            phxtool::pal4_encode(blue, 8, 8, enc);
+            enc[pal4_tile_pal_off(1)] = 1;
+            td.pixels = enc.data(); td.size = uint32_t(enc.size()); td.width = 8; td.format = PixelFormat::PAL4_TILES;
+            rollback = rollback && rp->load_texture(td) == kNoTexture;
+        }
+        check(rollback && rp->live_textures() == 1, "1000 partial RGBA8/PAL4 failures roll back all resource claims");
+        // Claim every remaining palette bank simultaneously: failure rollback did not consume any.
+        TextureId ids[16];
+        bool recovered = true;
+        for (int t = 0; t < 16; ++t) {
+            for (int i = 0; i < 64; ++i) blue[i] = (t == 0 && i % 15 == 0) ? kBlue : rgba(uint8_t((1 + i % 15) * 8), uint8_t(t * 8), 64);
+            ids[t] = rp->load_texture(bd);
+            recovered = recovered && ids[t] != kNoTexture;
+        }
+        check(recovered, "all 16 banks remain usable after 2000 failed uploads (shared bank fits live BG)");
+        for (TextureId id : ids) rp->unload_texture(id);
+    }
+
+    // Full slot table and fragmented/full tile store: failure never commits tiles, and
+    // deterministic first fit reuses holes without moving live texture data.
+    {
+        Renderer* rp = Renderer::create(plat->gfx(), arena, caps()).unwrap();
+        static uint32_t empty[511 * 64] = {};
+        TextureDesc td{}; td.pixels = empty; td.width = td.height = 8;
+        TextureId ids[256];
+        bool slots = true;
+        for (auto& id : ids) { id = rp->load_texture(td); slots = slots && id != kNoTexture; }
+        check(slots && rp->load_texture(td) == kNoTexture, "256 live slots enforce texture limit without partial allocation");
+        for (TextureId id : ids) rp->unload_texture(id);
+        td.width = 511 * 8;
+        const TextureId full = rp->load_texture(td);
+        check(full != kNoTexture && rp->load_texture(td) == kNoTexture, "all 511 non-reserved tiles recovered after slot exhaustion");
+        rp->unload_texture(full);
+        td.width = 128 * 8;
+        const TextureId a = rp->load_texture(td), b = rp->load_texture(td), c = rp->load_texture(td);
+        td.width = 127 * 8;
+        const TextureId d = rp->load_texture(td);
+        rp->unload_texture(b);
+        td.width = 129 * 8;
+        check(rp->load_texture(td) == kNoTexture, "fragmented store cannot overlap live neighboring runs");
+        td.width = 128 * 8;
+        const TextureId replacement = rp->load_texture(td);
+        check(replacement != kNoTexture, "exact freed interior run is reusable at full tile capacity");
+        for (TextureId id : {a, c, d, replacement}) rp->unload_texture(id);
+        check(rp->live_textures() == 0, "slot and fragmented-run tests release all resources");
+    }
+
+    {
+        Renderer* rp = Renderer::create(plat->gfx(), arena, caps()).unwrap();
+        TextureCache* cache = TextureCache::create(arena, *rp, 8u * 8u * 4u, 1).unwrap();
+        static uint32_t pixels[64];
+        TextureDesc td{}; td.pixels = pixels; td.width = td.height = 8;
+        bool valid = true;
+        for (uint32_t i = 0; i < 1000; ++i) {
+            const Rgba color = bgr555_to_rgba8(uint16_t(i + 1));
+            for (auto& p : pixels) p = color;
+            const TextureId id = cache->get_or_upload(i, td);
+            valid = valid && id != kNoTexture && cache->get_or_upload(i, td) == id && rp->live_textures() == 1;
+            rp->begin_frame(cam);
+            DrawSprite ds{}; ds.tex = id; ds.sw = ds.sh = 8; rp->draw_sprite(ds);
+            rp->end_frame();
+            valid = valid && phx_gfx_soft_lock(plat->gfx()).pixels[0] == color;
+        }
+        cache->evict_all();
+        check(valid && rp->live_textures() == 0 && cache->stats().evictions == 1000,
+              "1000 budget-cache evictions reclaim tiles/palettes and preserve current sprite pixels");
     }
 
     plat->shutdown();
