@@ -595,10 +595,7 @@ struct StudioGame final : Game {
         const ProjectDoc& p = project;
         launches.clear();
         launch_missing.clear();
-        std::vector<ProjectLaunch> pls = p.launches;
-        for (const ProjectLaunch& sl : ProjectDoc::standard_launches())
-            if (std::none_of(pls.begin(), pls.end(), [&](const ProjectLaunch& x) { return x.label == sl.label; }))
-                pls.push_back(sl);
+        const std::vector<ProjectLaunch> pls = p.effective_launches();
         for (const ProjectLaunch& pl : pls) {
             Launch l;
             l.label = pl.label;
@@ -677,8 +674,8 @@ struct StudioGame final : Game {
         ProjectDoc p;
         std::string err;
         if (!ProjectDoc::load(project.dir, p, &err)) { toast(err, Toast::Bad); return; }
-        project.bundles = p.bundles;
-        project.name = p.name;
+        project = p;
+        rebuild_launches();
     }
 
     std::string resolve_user_path(const std::string& p) const {
@@ -863,7 +860,7 @@ struct StudioGame final : Game {
                 path_field("PPSSPP", "PPSSPP", st->s.ppsspp, "The PPSSPP executable (PSP EBOOT launches open it)");
             } else {
                 ProjectDoc& p = st->p;
-                label("name", "The game's name (its title, and build/<name> files)");
+                label("name", "Display name; the stable build id and bundle path stay unchanged");
                 g.text_field(g.id("pname"), twk::Rect{ fx, y, fw, 13 }, p.name, "My Game");
                 y += 16;
                 label("description", nullptr);
@@ -944,6 +941,9 @@ struct StudioGame final : Game {
                     p.bundles = split_list(st->bundles);
                     if (p.name.empty()) { st->err = "the project needs a name"; st->tab = 1; return true; }
                     std::string err;
+                    ProjectDoc validated;
+                    if (!ProjectDoc::parse(p.to_json(), p.dir, validated, &err)) { st->err = err; return true; }
+                    p = validated;
                     if (!p.save(&err)) { st->err = err; return true; }
                     project = p;
                 }
@@ -1856,11 +1856,7 @@ struct StudioGame final : Game {
 
     // The project's bundle name: build/<slug>.phxp as the project lists it (else from its name).
     std::string budget_slug() const {
-        for (const std::string& b : project.bundles) {
-            const std::string st = stem_of(b);
-            if (!st.empty() && b.find("build/") == 0) return st;
-        }
-        return project_slug(project.name);
+        return project.id;
     }
     // The newest file time under `dir` (file-clock counts can be negative, e.g. MinGW: hence `found`).
     static bool newest_in(const std::string& dir, int64_t& t) {
@@ -1894,7 +1890,15 @@ struct StudioGame final : Game {
             if (t.rep.ok && (!measured || st < oldest)) { oldest = st; measured = true; }
         }
         int64_t na = 0, ns = 0;
-        const bool fa = newest_in(project.dir + "/assets", na), fs = newest_in(project.dir + "/src", ns);
+        bool fa = false, fs = false;
+        for (const auto& folder : project.assets) {
+            int64_t stamp = 0;
+            if (newest_in(join_path(project.dir, folder), stamp)) { na = fa ? std::max(na, stamp) : stamp; fa = true; }
+        }
+        for (const auto& folder : project.source) {
+            int64_t stamp = 0;
+            if (newest_in(join_path(project.dir, folder), stamp)) { ns = fs ? std::max(ns, stamp) : stamp; fs = true; }
+        }
         budget_stale_ = measured && ((fa && na > oldest) || (fs && ns > oldest));
     }
     bool run_launch_labelled(const std::string& label) {
@@ -1927,16 +1931,17 @@ struct StudioGame final : Game {
 
     void draw_profiler(int x0, int y) {
         refresh_trace();
+        const bool can_profile = std::any_of(launches.begin(), launches.end(), [](const Launch& l) { return l.label == "Profile"; });
         const bool running = std::any_of(launches.begin(), launches.end(), [&](const Launch& l) {
             return l.label == "Profile" && jobs && jobs->running_id() == int(&l - launches.data());
         });
-        if (gui.button(Rect{ x0, y, 110, 13 }, running ? "playing..." : "Profile", running, !running,
+        if (gui.button(Rect{ x0, y, 110, 13 }, running ? "playing..." : "Profile", running, can_profile && !running,
                        "Play the game with PHX_TRACE=build/trace.csv: every frame's update / render / present time "
                        "is recorded; quit the game to see it here")) {
             if (!run_launch_labelled("Profile")) toast("this project has no 'Profile' launch", Toast::Warn);
         }
         const std::vector<FrameTrace::Row>& R = trace_.rows;
-        gui.text(x0 + 118, y + 3, R.empty() ? "no trace yet: press Profile, play a while, quit"
+        gui.text(x0 + 118, y + 3, !can_profile ? "no profile launch configured" : R.empty() ? "no trace yet: press Profile, play a while, quit"
                                             : fmt("%d frames of PC timings (this machine), build/trace.csv", int(R.size())),
                  R.empty() ? pal::warn : pal::dim, kLyText, kW - x0 - 130);
         y += 20;
@@ -2023,16 +2028,17 @@ struct StudioGame final : Game {
         section(x0, y0, kW - 16 - 136, "BUDGETS  (the game run headlessly as each target, with scripted play)");
         int y = y0 + 14;
         const bool any = budget_[0].rep.ok || budget_[1].rep.ok || budget_[2].rep.ok;
+        const bool can_measure = std::any_of(launches.begin(), launches.end(), [](const Launch& l) { return l.label == "Measure budgets"; });
         bool running = false;                            // a Measure (or any launch) in progress
         for (size_t i = 0; i < launches.size(); ++i)
             if (launches[i].label == "Measure budgets" && jobs && jobs->running_id() == int(i)) running = true;
-        if (gui.button(Rect{ x0, y, 110, 13 }, running ? "measuring..." : "Measure budgets", running, !running,
+        if (gui.button(Rect{ x0, y, 110, 13 }, running ? "measuring..." : "Measure budgets", running, can_measure && !running,
                        "Bake for every tier, then run the game as PC, GBA (fixed point, PPU) and PSP for 30 s of play: "
                        "make project-budget (see the Run view)")) {
             if (!run_launch_labelled("Measure budgets")) toast("this project has no 'Measure budgets' launch", Toast::Warn);
         }
-        std::string note = !any ? "not measured yet: press Measure (about a minute)"
-                         : budget_stale_ ? "the assets or code changed since: measure again" : "up to date with assets/ and src/";
+        std::string note = !can_measure ? "no budget launch configured" : !any ? "not measured yet: press Measure (about a minute)"
+                         : budget_stale_ ? "the assets or code changed since: measure again" : "up to date with configured assets and source";
         gui.text(x0 + 118, y + 3, note, !any || budget_stale_ ? pal::warn : pal::good, kLyText, kW - x0 - 130);
         y += 20;
         const int gap = 8, cw = (kW - 2 * x0 - 2 * gap) / 3;

@@ -1,5 +1,6 @@
 {
   "name": "Miracle",
+  "build": "custom",
   "description": "A Small Miracle: a music visualizer (resident PCM + a baked visual stream)",
   "source": ["src"],
   "assets": [],

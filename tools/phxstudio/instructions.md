@@ -51,6 +51,8 @@ design: they are the project's own build configuration and run whatever they say
 
 ```json
 { "name": "My Game",
+  "id": "my_game",
+  "build": "generic",
   "description": "A Phosphorus game",
   "source":  ["src"],
   "assets":  ["assets"],
@@ -63,17 +65,34 @@ design: they are the project's own build configuration and run whatever they say
 
 | Key | Meaning |
 |---|---|
-| `name`, `description` | shown in the Studio; the name's slug (`my_game`) names the binary and the bundle |
-| `source`, `assets` | code folders, and the folders `make game-assets` bakes (default `["src"]`, `["assets"]`) |
+| `name`, `description` | display metadata shown in Studio; changing it leaves build identity and generated C++ untouched |
+| `id` | stable lowercase ASCII letters, digits, `_`, `-`: names binaries, bundles and exports; generated C++ mounts `build/<id>.phxp`. Keep this fixed when renaming the display name. |
+| `build` | `generic` (default) uses the engine's project rules and standard Studio launches; `custom` uses only the configured launches and rejects generic build/bake/export/budget commands. |
+| `source` | project-relative source roots (default `["src"]`); generic builds recursively compile `.cpp` files only beneath these roots, deduplicate overlapping roots, skip symlinks and `build`, `dist`, VCS/cache directories. Nested paths and multiple roots are supported; each root is also an include directory. Roots must remain inside the project. |
+| `assets` | folders `make game-assets` bakes (default `["assets"]`); an explicit empty array means no assets, not a fallback to `assets/`. |
 | `bundles` | extra `.phxp` files for the Assets view, relative to the project (it always lists the project's own `*.phxp` and `build/*.phxp`) |
 | `launches[]` | the Run view: `label`, `command`, `group` (`play`, `build`, `test`, `console`, `tool`), `blurb` (status-bar help), `needs` (tools that must be installed; the launch is greyed out without them; `$VAR` is filled from the environment, with `$DEVKITPRO` = `/opt/devkitpro` and `$DEVKITARM` = `$DEVKITPRO/devkitARM` by default), `windowed` (it opens its own window) |
+
+Older generated projects remain valid: without `id`, a listed `build/<id>.phxp` supplies
+identity before falling back to the original name's slug. Studio saves the resolved `id`,
+so later display renames stay safe. If neither an id nor a bundle path exists, set `id` to
+the current build slug before renaming. Changing `id` deliberately requires updating any
+literal bundle references in gameplay code and the `bundles` list.
+
+Legacy projects with `assets: []` and configured `launches` default to `custom`; an explicit
+`build` overrides this inference. The bundled examples explicitly use `custom`, preserving
+their existing commands and layouts. Standard launches are added only to generic projects.
+`phxnew --project-json DIR` exposes the same normalized configuration used by Studio to the
+Makefile, baker and exporter; Python helpers do not apply separate metadata defaults.
+CMake continues to build the engine and host tools (including `phxnew`); game project builds
+use the existing Make targets. Standalone baking needs `phxnew` in the `--tools` directory.
 
 Launch commands run **from the project folder** with `$PHX_ROOT` (the Phosphorus checkout) and
 `$PHX_PROJECT` (the project) exported. A new project uses the engine's generic rules, so it needs
 no edit to the engine's Makefile:
 
 ```bash
-make game        PROJECT=path/to/project        # src/*.cpp against the PUBLIC headers -> build/<name>
+make game        PROJECT=path/to/project        # declared source roots against PUBLIC headers -> build/<id>
 make game-assets PROJECT=path/to/project [TIER=0|1|2]   # assets/ -> build/<name>.phxp (TIER 0 = GBA: <name>.t0.phxp)
 make play        PROJECT=path/to/project        # both, then run it from the project folder
 make game-gba    PROJECT=path/to/project        # devkitARM -> build/<name>.gba (native PPU, size-gated)

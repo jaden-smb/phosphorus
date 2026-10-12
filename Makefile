@@ -743,8 +743,10 @@ SDL_PLATFORM_OBJ := $(HOSTOBJ)/sdl/sdl_platform.o
 PROJECT     ?=
 TIER_BAKE   := $(if $(BAKE_TIER),$(BAKE_TIER),2)
 GAME_DIR     = $(abspath $(PROJECT))
-GAME_NAME    = $(shell python3 -c "import json,re,sys,os;d=json.load(open(sys.argv[1]+'/phxproject.json'));print(re.sub(r'[^a-z0-9_-]','',(d.get('name') or os.path.basename(sys.argv[1])).lower().replace(' ','_')) or 'game')" "$(GAME_DIR)" 2>/dev/null)
-GAME_SRC     = $(wildcard $(GAME_DIR)/src/*.cpp)
+# phxnew exposes ProjectDoc's interpretation: no independent Make/Python metadata parser.
+GAME_NAME    = $(shell "$(BUILD)/phxnew" --project-id "$(GAME_DIR)")
+GAME_SRC     = $(shell "$(BUILD)/phxnew" --project-sources "$(GAME_DIR)")
+GAME_INCLUDES = $(shell "$(BUILD)/phxnew" --project-includes "$(GAME_DIR)")
 LPAREN       := (
 GAME_HAS_MAIN = $(shell grep -lE '^[[:space:]]*int[[:space:]]+main[[:space:]]*[$(LPAREN)]' $(GAME_SRC) /dev/null 2>/dev/null)
 PUBLIC_INCLUDES := $(addprefix -I,$(wildcard engine/*/include))
@@ -755,16 +757,17 @@ GAME_ENGINE_OBJ := $(patsubst %.cpp,$(HOSTOBJ)/%.o,$(filter-out engine/platform/
 GAME_ENTRY_OBJ  := $(HOSTOBJ)/engine/runtime/src/entry/desktop_main.o
 GAME_NULL_OBJ   := $(HOSTOBJ)/engine/platform/src/null/null_platform.o
 
-game-check:
+game-check: $(BUILD)/phxnew
 	@test -n "$(PROJECT)" || { echo "usage: make game|game-assets|play|game-gba|game-psp PROJECT=path/to/project"; exit 1; }
 	@test -f "$(GAME_DIR)/phxproject.json" || { echo "$(GAME_DIR): not a Phosphorus project (no phxproject.json)"; exit 1; }
+	@"$(BUILD)/phxnew" --project-check "$(GAME_DIR)"
 
 game-src-check: game-check
-	@test -n "$(GAME_SRC)" || { echo "$(GAME_DIR)/src has no .cpp files"; exit 1; }
+	@test -n "$(GAME_SRC)" || { echo "declared source roots in $(GAME_DIR) have no .cpp files"; exit 1; }
 
 game: game-src-check $(GAME_ENGINE_OBJ) $(GAME_ENTRY_OBJ) $(SDL_PLATFORM_OBJ)
 	@mkdir -p "$(GAME_DIR)/build"
-	$(CXX) $(CXXFLAGS) $(PUBLIC_INCLUDES) -I"$(GAME_DIR)/src" -I"$(GAME_DIR)/build/gen" $(GAME_SRC) \
+	$(CXX) $(CXXFLAGS) $(PUBLIC_INCLUDES) $(GAME_INCLUDES) -I"$(GAME_DIR)/build/gen" $(GAME_SRC) \
 	  $(GAME_ENGINE_OBJ) $(if $(GAME_HAS_MAIN),,$(GAME_ENTRY_OBJ)) $(SDL_PLATFORM_OBJ) $(SDL_LIBS) \
 	  -o "$(GAME_DIR)/build/$(GAME_NAME)"
 	@echo "built $(GAME_DIR)/build/$(GAME_NAME)"
@@ -1373,7 +1376,7 @@ GAME_GBA_OBJ := $(patsubst %.cpp,$(BUILD)/gba/%.o,$(GAME_CONSOLE_ENGINE) engine/
 GAME_PSP_OBJ := $(patsubst %.cpp,$(BUILD)/psp/%.o,$(GAME_CONSOLE_ENGINE) engine/render/src/soft/soft_renderer.cpp \
                   engine/platform/src/psp/psp_platform.cpp engine/runtime/src/entry/psp_main.cpp)
 GAME_OUT       = $(GAME_DIR)/build
-GAME_TITLE     = $(shell python3 -c "import json,sys,os;d=json.load(open(sys.argv[1]+'/phxproject.json'));print((d.get('name') or os.path.basename(sys.argv[1]))[:64])" "$(GAME_DIR)" 2>/dev/null)
+GAME_TITLE     = $(shell "$(BUILD)/phxnew" --project-title "$(GAME_DIR)")
 GAME_GBA_TITLE = $(shell echo "$(GAME_NAME)" | tr a-z A-Z | tr -cd 'A-Z0-9' | cut -c1-12)
 GAME_GBA_ROM_MB ?= 32
 MGBA   ?= $(firstword $(shell command -v mgba-qt mgba mGBA 2>/dev/null))
@@ -1387,7 +1390,7 @@ game-gba: game-console-check $(GAME_GBA_OBJ) $(PHXSPRITE) $(PHXTILE) $(PHXSND) $
 	@mkdir -p "$(GAME_OUT)/gba"
 	python3 tools/common/bin2s.py --name phx_game_phxp "$(GAME_OUT)/$(GAME_NAME).t0.phxp" > "$(GAME_OUT)/gba/bundle.s"
 	$(GBA_CXX) $(GBA_ARCH) -x assembler-with-cpp -c "$(GAME_OUT)/gba/bundle.s" -o "$(GAME_OUT)/gba/bundle.o"
-	$(GBA_CXX) $(GBA_FLAGS) $(PUBLIC_INCLUDES) -I"$(GAME_DIR)/src" -I"$(GAME_OUT)/gen" -specs=gba.specs \
+	$(GBA_CXX) $(GBA_FLAGS) $(PUBLIC_INCLUDES) $(GAME_INCLUDES) -I"$(GAME_OUT)/gen" -specs=gba.specs \
 	  $(GAME_SRC) $(GAME_GBA_OBJ) "$(GAME_OUT)/gba/bundle.o" -o "$(GAME_OUT)/gba/$(GAME_NAME).elf"
 	$(GBA_OBJCOPY) -O binary "$(GAME_OUT)/gba/$(GAME_NAME).elf" "$(GAME_OUT)/$(GAME_NAME).gba"
 	$(GBA_FIX) "$(GAME_OUT)/$(GAME_NAME).gba" -t"$(GAME_GBA_TITLE)" >/dev/null
@@ -1404,7 +1407,7 @@ game-psp: game-console-check $(GAME_PSP_OBJ) $(PHXSPRITE) $(PHXTILE) $(PHXSND) $
 	@mkdir -p "$(GAME_OUT)/psp"
 	python3 tools/common/bin2s.py --name phx_game_phxp "$(GAME_OUT)/$(GAME_NAME).t1.phxp" > "$(GAME_OUT)/psp/bundle.s"
 	$(PSP_CXX) -x assembler-with-cpp -c "$(GAME_OUT)/psp/bundle.s" -o "$(GAME_OUT)/psp/bundle.o"
-	$(PSP_CXX) $(PSP_FLAGS) $(PUBLIC_INCLUDES) -I"$(GAME_DIR)/src" -I"$(GAME_OUT)/gen" $(GAME_SRC) $(GAME_PSP_OBJ) \
+	$(PSP_CXX) $(PSP_FLAGS) $(PUBLIC_INCLUDES) $(GAME_INCLUDES) -I"$(GAME_OUT)/gen" $(GAME_SRC) $(GAME_PSP_OBJ) \
 	  "$(GAME_OUT)/psp/bundle.o" $(PSP_LDFLAGS) $(PSP_LIBS) -o "$(GAME_OUT)/psp/$(GAME_NAME).elf"
 	$(PSP_FIXUP) "$(GAME_OUT)/psp/$(GAME_NAME).elf"
 	$(PSP_PRXGEN) "$(GAME_OUT)/psp/$(GAME_NAME).elf" "$(GAME_OUT)/psp/$(GAME_NAME).prx"
@@ -1438,6 +1441,9 @@ phxnew: $(PHXNEW)
 project-check: $(PHXNEW) $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) $(PHXPACK)
 	@rm -rf $(BUILD)/projcheck
 	@./$(PHXNEW) $(PROJCHECK_DIR) "Project Check" >/dev/null
+	@$(MAKE) -s --no-print-directory game-assets PROJECT=$(PROJCHECK_DIR) TIER=2 >/dev/null
+	@$(MAKE) -s --no-print-directory project-run PROJECT=$(PROJCHECK_DIR) PROFILE=desktop BUNDLE=phxp
+	@python3 tools/common/test_project_config.py $(PROJCHECK_DIR) $(PHXNEW)
 	@for t in 2 0 1; do $(MAKE) -s --no-print-directory game-assets PROJECT=$(PROJCHECK_DIR) TIER=$$t >/dev/null || exit 1; done
 	@$(MAKE) -s --no-print-directory project-run PROJECT=$(PROJCHECK_DIR) PROFILE=desktop BUNDLE=phxp
 	@$(MAKE) -s --no-print-directory project-run PROJECT=$(PROJCHECK_DIR) PROFILE=gba BUNDLE=t0.phxp TIER=gba_sim GAME_RENDER=ppu
@@ -1449,7 +1455,7 @@ project-check: $(PHXNEW) $(PHXSPRITE) $(PHXTILE) $(PHXSND) $(PHXBIN) $(PHXPACK)
 # The component schema `make game` exports for Phosphorus Studio (internal to project-check): the
 # project on the engine's real desktop entry (null platform), run with PHX_DUMP_COMPONENTS.
 project-schema: game-console-check $(GAME_ENGINE_OBJ) $(GAME_ENTRY_OBJ) $(GAME_NULL_OBJ)
-	@$(CXX) $(CXXFLAGS) $(PUBLIC_INCLUDES) -I"$(GAME_DIR)/src" -I"$(GAME_OUT)/gen" $(GAME_SRC) $(GAME_ENGINE_OBJ) \
+	@$(CXX) $(CXXFLAGS) $(PUBLIC_INCLUDES) $(GAME_INCLUDES) -I"$(GAME_OUT)/gen" $(GAME_SRC) $(GAME_ENGINE_OBJ) \
 	  $(GAME_ENTRY_OBJ) $(GAME_NULL_OBJ) -o "$(GAME_OUT)/schema-dump"
 	@cd "$(GAME_DIR)" && PHX_DUMP_COMPONENTS=build/components.json ./build/schema-dump
 	@grep -q '"name": "PlatformerController"' "$(GAME_OUT)/components.json" || { echo "  FAIL $(GAME_NAME): the stock behaviours are missing from build/components.json"; exit 1; }
@@ -1466,7 +1472,7 @@ PROJRUN_DIR = $(GAME_OUT)/run-$(PROFILE)
 BUDGET_REPORT ?=
 project-run: game-console-check $(PROJRUN_OBJ)
 	@mkdir -p "$(PROJRUN_DIR)/build"
-	@$(CXX) $(CXXFLAGS) $(PUBLIC_INCLUDES) -I"$(GAME_DIR)/src" -I"$(GAME_OUT)/gen" $(GAME_SRC) $(PROJRUN_OBJ) \
+	@$(CXX) $(CXXFLAGS) $(PUBLIC_INCLUDES) $(GAME_INCLUDES) -I"$(GAME_OUT)/gen" $(GAME_SRC) $(PROJRUN_OBJ) \
 	  -o "$(PROJRUN_DIR)/game"
 	@cp "$(GAME_OUT)/$(GAME_NAME).$(BUNDLE)" "$(PROJRUN_DIR)/build/$(GAME_NAME).phxp"
 	@cd "$(PROJRUN_DIR)" && PHX_MAX_FRAMES=$(PROJCHECK_FRAMES) PHX_PROFILE=$(PROFILE) $(if $(RELOAD_STRESS),PHX_RELOAD_BUNDLE="build/$(GAME_NAME).phxp") \
@@ -1491,7 +1497,7 @@ game-export: game-check
 	  psp) $(MAKE) --no-print-directory game-psp PROJECT="$(GAME_DIR)" ;; \
 	  *)   echo "EXPORT must be pc, gba or psp"; exit 1 ;; \
 	esac
-	@python3 tools/common/export_project.py "$(GAME_DIR)" --target $(EXPORT) --name "$(GAME_NAME)"
+	@python3 tools/common/export_project.py "$(GAME_DIR)" --target $(EXPORT) --name "$(GAME_NAME)" --config-tool "$(abspath $(BUILD)/phxnew)"
 
 # A project's BUDGETS, measured: bake it for every tier, then run it headlessly under each target's
 # profile (PC, GBA on the PPU model in fixed point, PSP) for BUDGET_FRAMES frames of scripted play,

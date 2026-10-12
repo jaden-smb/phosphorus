@@ -1149,6 +1149,27 @@ PHX_TEST(prefab_inspector_applies_reflected_components) {
     CHECK(phxtool::BinDoc::load(d.save_json(), back) && back.fields.size() == 7 && back.str_cell(0, 1) == "Coin");
 }
 
+PHX_TEST(project_identity_and_build_configuration) {
+    ProjectDoc p, renamed;
+    std::string err;
+    CHECK(ProjectDoc::parse(R"({"name":"Old Name","bundles":["build/old_name.phxp"]})", "/tmp/game", p, &err));
+    CHECK(p.id == "old_name" && p.build == "generic");
+    p.name = "New Display Name";
+    CHECK(ProjectDoc::parse(p.to_json(), p.dir, renamed, &err));
+    CHECK(renamed.name == p.name && renamed.id == "old_name");
+    CHECK(ProjectDoc::parse(R"({"name":"Already Renamed","bundles":["build/old_name.phxp"]})", p.dir, renamed, &err));
+    CHECK(renamed.id == "old_name");
+    CHECK(ProjectDoc::parse(R"({"build":"custom","source":["src","tools"],"assets":[],"launches":[{"label":"Test","command":"make custom-test"}]})", p.dir, p, &err));
+    CHECK(p.effective_launches().size() == 1);
+    CHECK(ProjectDoc::parse(R"({"assets":[],"launches":[]})", p.dir, p, &err) && p.build == "custom");
+    CHECK(ProjectDoc::parse(R"({"build":"generic","assets":[],"launches":[]})", p.dir, p, &err));
+    CHECK(p.effective_launches().size() == ProjectDoc::standard_launches().size());
+    CHECK(!ProjectDoc::parse(R"({"source":"src"})", "/tmp/game", p, &err));
+    CHECK(!ProjectDoc::parse(R"({"source":["../outside"]})", "/tmp/game", p, &err));
+    CHECK(!ProjectDoc::parse(R"({"id":"My Game"})", "/tmp/game", p, &err));
+    CHECK(!ProjectDoc::parse(R"({"build":"unknown"})", "/tmp/game", p, &err));
+}
+
 PHX_TEST(new_project_template_is_complete_and_bakeable) {
     namespace fs = std::filesystem;
     std::error_code ec;

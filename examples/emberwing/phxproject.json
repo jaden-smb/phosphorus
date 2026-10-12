@@ -1,5 +1,6 @@
 {
   "name": "Emberwing",
+  "build": "custom",
   "description": "Cinder Hollow: the engine's showcase platformer (GBA, PSP, PC)",
   "source": ["src"],
   "assets": [],

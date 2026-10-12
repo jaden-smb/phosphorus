@@ -9,6 +9,10 @@ All notable changes to Phosphorus are documented here. The format follows
 
 ### Fixed
 
+- Game projects share Studio metadata parsing with build/bake/export tools, compile declared
+  nested source roots, and keep bundle identity stable across display renames. Custom projects
+  expose only supported launches; existing generated projects remain compatible.
+
 - GBA PPU texture tiles and palette slots are reclaimed on destruction; failed uploads roll
   back palette claims. Retained maps pin their tilesets and repeated level reloads reuse
   bounded resources. Texture handles are now opaque 32-bit values to reject stale PPU IDs.

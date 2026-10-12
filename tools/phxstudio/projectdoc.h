@@ -4,7 +4,7 @@
 // A project is a folder holding a `phxproject.json`:
 //
 //   { "name": "Emberwing",
-//     "source":  ["src"],                         // code folders (hints for the Explorer/templates)
+//     "source":  ["src"],                         // recursive C++ source roots for generic builds
 //     "assets":  ["assets"],                      // author-asset folders (what `make game-assets` bakes)
 //     "bundles": ["build/emberwing.phxp"],        // baked bundles the Assets view shows (may be ../..)
 //     "launches": [ { "label": "Play", "group": "play", "command": "make -C \"$PHX_ROOT\" play PROJECT=\"$PHX_PROJECT\"",
@@ -99,6 +99,17 @@ struct AccessPolicy {
     }
 };
 
+// A project name -> a folder / binary / bundle name (letters, digits, '_' and '-').
+inline std::string project_slug(const std::string& name) {
+    std::string o;
+    for (char c : name) {
+        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-') o += c;
+        else if (c >= 'A' && c <= 'Z') o += char(c - 'A' + 'a');
+        else if (c == ' ') o += '_';
+    }
+    return o;
+}
+
 // ---- the project file ----
 struct ProjectLaunch {
     std::string label, group = "play", command, blurb;
@@ -111,7 +122,7 @@ public:
     static constexpr const char* kFile = "phxproject.json";
 
     std::string dir;             // canonical project folder
-    std::string name, description;
+    std::string name, description, id, build = "generic";
     std::vector<std::string> source{ "src" }, assets{ "assets" }, bundles;
     std::vector<ProjectLaunch> launches;
 
@@ -144,10 +155,11 @@ public:
         std::string jerr;
         if (!phxtool::JsonParser::parse(text, root, &jerr)) return fail("malformed JSON: " + jerr);
         if (!root.is_obj()) return fail("top level is not a JSON object");
+        const std::string project_dir = dir; // allow parsing back into the same document
         out = ProjectDoc{};
-        out.dir = dir;
+        out.dir = project_dir;
         out.name = root.str_at("name");
-        if (out.name.empty()) out.name = base_name(dir);
+        if (out.name.empty()) out.name = base_name(project_dir);
         out.description = root.str_at("description");
         auto strings = [&](const char* key, std::vector<std::string>& v) {
             if (const phxtool::JsonValue* a = root.find(key); a && a->is_arr()) {
@@ -158,6 +170,38 @@ public:
         strings("source", out.source);
         strings("assets", out.assets);
         strings("bundles", out.bundles);
+        for (const char* key : { "name", "description", "id", "build" })
+            if (const auto* v = root.find(key); v && v->type != phxtool::JsonValue::Str)
+                return fail(std::string(key) + " must be a string");
+        out.id = root.str_at("id");
+        if (out.id.empty()) {
+            // Old templates mount this literal path. Preserve it when the display name changes.
+            for (const std::string& b : out.bundles)
+                if (dir_name(b) == "build" && lower_ext(b) == ".phxp" && stem_of(b).find('.') == std::string::npos) {
+                    out.id = stem_of(b); break;
+                }
+            if (out.id.empty()) out.id = project_slug(out.name);
+            if (out.id.empty()) out.id = "game";
+        }
+        if (project_slug(out.id) != out.id) return fail("id must contain only lowercase ASCII letters, digits, '_' or '-'");
+        out.build = root.str_at("build");
+        // Legacy custom examples declare no generic assets and provide their own launches.
+        if (out.build.empty()) out.build = out.assets.empty() && root.find("launches") ? "custom" : "generic";
+        if (out.build != "generic" && out.build != "custom") return fail("build must be generic or custom");
+        for (const char* key : { "source", "assets", "bundles" }) {
+            if (const auto* a = root.find(key)) {
+                if (!a->is_arr()) return fail(std::string(key) + " must be an array of strings");
+                for (const auto& v : a->arr)
+                    if (v.type != phxtool::JsonValue::Str || v.as_str().empty()) return fail(std::string(key) + " must contain nonempty strings");
+            }
+        }
+        if (out.build == "generic") {
+            for (const std::string& r : out.source) {
+                const pfs::path rel(r);
+                if (rel.is_absolute() || !path_within(canon_path(project_dir + "/" + r), canon_path(project_dir)))
+                    return fail("source roots must stay inside the project");
+            }
+        }
         if (const phxtool::JsonValue* ls = root.find("launches"); ls && ls->is_arr())
             for (const phxtool::JsonValue& l : ls->arr) {
                 ProjectLaunch pl;
@@ -178,7 +222,13 @@ public:
     std::string to_json() const {
         auto q = [](const std::string& s) {
             std::string o = "\"";
-            for (char c : s) { if (c == '"' || c == '\\') o += '\\'; o += c; }
+            for (char c : s) {
+                if (static_cast<unsigned char>(c) < 32) {
+                    char esc[7]; std::snprintf(esc, sizeof(esc), "\\u%04x", unsigned(static_cast<unsigned char>(c))); o += esc; continue;
+                }
+                if (c == '"' || c == '\\') o += '\\';
+                o += c;
+            }
             return o + "\"";
         };
         auto list = [&](const std::vector<std::string>& v) {
@@ -187,6 +237,7 @@ public:
             return o + "]";
         };
         std::string j = "{\n  \"name\": " + q(name) + ",\n";
+        j += "  \"id\": " + q(id) + ",\n  \"build\": " + q(build) + ",\n";
         if (!description.empty()) j += "  \"description\": " + q(description) + ",\n";
         j += "  \"source\": " + list(source) + ",\n  \"assets\": " + list(assets) + ",\n  \"bundles\": " + list(bundles) + ",\n";
         j += "  \"launches\": [";
@@ -227,6 +278,34 @@ public:
         return out;
     }
 
+    // Only declared roots, recursively; no symlink traversal or generated trees.
+    std::vector<std::string> source_files() const {
+        std::vector<std::string> files;
+        std::error_code ec;
+        for (const std::string& r : source) {
+            const std::string root = canon_path(dir + "/" + r);
+            for (pfs::recursive_directory_iterator it(root, ec), end; !ec && it != end; it.increment(ec)) {
+                const std::string n = it->path().filename().string();
+                if (it->is_symlink(ec) || hidden_entry(n, it->is_directory(ec)) ||
+                    (it->is_directory(ec) && (n == "build" || n == "dist"))) {
+                    it.disable_recursion_pending(); continue;
+                }
+                if (it->is_regular_file(ec) && it->path().extension() == ".cpp")
+                    files.push_back(it->path().generic_string());
+            }
+            ec.clear();
+        }
+        std::sort(files.begin(), files.end());
+        files.erase(std::unique(files.begin(), files.end()), files.end());
+        return files;
+    }
+    std::vector<ProjectLaunch> effective_launches() const {
+        auto out = launches;
+        if (build == "generic") for (const auto& l : standard_launches())
+            if (std::none_of(out.begin(), out.end(), [&](const auto& x) { return x.label == l.label; })) out.push_back(l);
+        return out;
+    }
+
     // The standard launches of a project built by the generic rules (`make game|game-assets|play`,
     // `play-gba`, `play-psp`). A need may name an SDK variable ($DEVKITARM; see expand_need_vars).
     static std::vector<ProjectLaunch> standard_launches() {
@@ -235,7 +314,7 @@ public:
             ProjectLaunch{ "Play", "play", mk + "-s play PROJECT=\"$PHX_PROJECT\"",
                            "Build the game, bake its assets and run it in a window", { "sdl2-config" }, true },
             ProjectLaunch{ "Build", "build", mk + "game PROJECT=\"$PHX_PROJECT\"",
-                           "Compile src/*.cpp against the engine into build/<name>", { "sdl2-config" }, false },
+                           "Compile declared source roots against the engine into build/<id>", { "sdl2-config" }, false },
             ProjectLaunch{ "Bake assets", "build", mk + "game-assets PROJECT=\"$PHX_PROJECT\"",
                            "Bake assets/ into build/<name>.phxp (sprites, maps, sounds, tables, images)", {}, false },
             ProjectLaunch{ "GBA ROM", "console", mk + "-s play-gba PROJECT=\"$PHX_PROJECT\"",
@@ -283,17 +362,6 @@ inline std::vector<std::string> discover_projects(const std::string& engine_root
         if (it->is_directory(ec) && ProjectDoc::is_project_dir(it->path().string())) out.push_back(canon_path(it->path().string()));
     std::sort(out.begin(), out.end());
     return out;
-}
-
-// A project name -> a folder / binary / bundle name (letters, digits, '_' and '-').
-inline std::string project_slug(const std::string& name) {
-    std::string o;
-    for (char c : name) {
-        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-') o += c;
-        else if (c >= 'A' && c <= 'Z') o += char(c - 'A' + 'a');
-        else if (c == ' ') o += '_';
-    }
-    return o;
 }
 
 // ---- New project: a small, complete, buildable game ----
@@ -664,6 +732,7 @@ inline bool create_project(const std::string& dir, const std::string& name, std:
     ProjectDoc p;
     p.dir = canon_path(dir);
     p.name = name.empty() ? slug : name;
+    p.id = slug;
     p.description = "A Phosphorus game";
     p.bundles = { "build/" + slug + ".phxp" };
     p.launches = ProjectDoc::standard_launches();

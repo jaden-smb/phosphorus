@@ -17,27 +17,18 @@ and a zip under <project>/dist/ that runs without the engine checkout:
 Prints the zip's path. Exit status is non-zero when the build output it packages is missing.
 """
 import argparse
-import json
 import os
 import re
 import shutil
 import subprocess
 import sys
 import zipfile
+from project_config import load_project
 
 
 def die(msg):
     print(f"export: {msg}", file=sys.stderr)
     sys.exit(1)
-
-
-def project_meta(proj):
-    try:
-        with open(os.path.join(proj, "phxproject.json"), encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, ValueError) as e:
-        die(f"{proj}/phxproject.json: {e}")
-
 
 # ---- Windows: the DLLs an executable needs, from the toolchain (not the system) -------------------
 SYSTEM_DLL = re.compile(r"^(api-ms-|ext-ms-)|^(kernel32|user32|gdi32|shell32|advapi32|ole32|oleaut32|"
@@ -139,10 +130,16 @@ def main():
     ap.add_argument("project")
     ap.add_argument("--target", choices=("pc", "gba", "psp"), default="pc")
     ap.add_argument("--name", required=True, help="the project's slug (the build's file names)")
+    ap.add_argument("--config-tool", default="build/phxnew")
     args = ap.parse_args()
 
     proj = os.path.abspath(args.project)
-    meta = project_meta(proj)
+    try:
+        meta = load_project(proj, os.path.abspath(args.config_tool))
+    except (OSError, ValueError, subprocess.CalledProcessError) as e:
+        die(getattr(e, "stderr", "") or str(e))
+    if meta["build"] != "generic" or args.name != meta["id"]:
+        die("export requires a generic project and its stable id")
     title = (meta.get("name") or args.name).strip() or args.name
     build = os.path.join(proj, "build")
     plat = {"pc": "windows" if os.name == "nt" else "linux", "gba": "gba", "psp": "psp"}[args.target]

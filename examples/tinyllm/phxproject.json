@@ -1,5 +1,6 @@
 {
   "name": "tinyLLM",
+  "build": "custom",
   "description": "A quantized language model on the engine's BG-tilemap text console (runs on a GBA)",
   "source": ["src", "tools"],
   "assets": [],

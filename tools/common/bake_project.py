@@ -22,11 +22,7 @@ import os
 import re
 import subprocess
 import sys
-
-
-def slug(name):
-    s = re.sub(r"[^a-z0-9_-]", "", name.lower().replace(" ", "_"))
-    return s
+from project_config import load_project
 
 
 def main():
@@ -38,13 +34,15 @@ def main():
 
     proj = os.path.abspath(args.project)
     try:
-        with open(os.path.join(proj, "phxproject.json"), encoding="utf-8") as f:
-            meta = json.load(f)
-    except (OSError, ValueError) as e:
-        print(f"bake_project: {proj}/phxproject.json: {e}", file=sys.stderr)
+        meta = load_project(proj, os.path.join(os.path.abspath(args.tools), "phxnew"))
+    except (OSError, ValueError, subprocess.CalledProcessError) as e:
+        print(f"bake_project: {getattr(e, 'stderr', '') or e}", file=sys.stderr)
         return 1
-    name = slug(meta.get("name") or os.path.basename(proj)) or "game"
-    folders = meta.get("assets") or ["assets"]
+    if meta["build"] != "generic":
+        print("bake_project: custom-build project; use its configured launches", file=sys.stderr)
+        return 1
+    name = meta["id"]
+    folders = meta["assets"]
 
     files = []
     for folder in folders:

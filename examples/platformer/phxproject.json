@@ -1,5 +1,6 @@
 {
   "name": "Platformer",
+  "build": "custom",
   "description": "The reference platformer: the MVP gate, every engine system in one game",
   "source": ["src"],
   "assets": [],
